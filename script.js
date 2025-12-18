@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const keywordsInput = document.getElementById('keywords');
     const notification = document.getElementById('notification');
     const notificationText = document.getElementById('notification-text');
+    const themeToggleBtn = document.getElementById('theme-toggle');
+    
+    // 主题相关元素（稍后初始化）
+    let themeIcon, themeText;
     
     // 统计元素
     const inputLineCount = document.getElementById('input-line-count');
@@ -381,17 +385,143 @@ controller mtn-fgclient 4
         keywordsInput.value = savedKeywords;
     }
     
-    // 处理示例文本
-    if (savedInput) {
-        setTimeout(() => {
-            processBtn.click();
-        }, 500);
+    // 注释掉自动处理示例文本的代码，让用户手动点击
+    // 这样可以确保主题切换按钮在页面加载时立即可用
+    // if (savedInput) {
+    //     setTimeout(() => {
+    //         processBtn.click();
+    //     }, 500);
+    // }
+    
+    // 主题切换功能
+    let currentTheme = 'light';
+    
+    function initTheme() {
+        console.log('初始化主题功能...');
+        
+        // 获取主题相关元素
+        themeIcon = themeToggleBtn.querySelector('i');
+        themeText = themeToggleBtn.querySelector('.theme-text');
+        
+        // 检查元素是否存在
+        if (!themeToggleBtn) {
+            console.error('主题切换按钮未找到');
+            return;
+        }
+        
+        if (!themeIcon) {
+            console.error('主题图标未找到');
+        }
+        
+        if (!themeText) {
+            console.error('主题文本未找到');
+        }
+        
+        console.log('主题元素:', { themeToggleBtn, themeIcon, themeText });
+        
+        // 检查本地存储中的主题设置
+        const savedTheme = localStorage.getItem('configDeduplicator_theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        // 设置初始主题
+        currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+        console.log('初始主题:', currentTheme);
+        applyTheme(currentTheme);
+        
+        // 主题切换按钮点击事件
+        themeToggleBtn.addEventListener('click', toggleTheme);
+        
+        console.log('主题功能初始化完成');
     }
     
-    // 页面加载后自动处理示例
-    setTimeout(() => {
-        if (!savedInput && inputText.value.trim()) {
-            processBtn.click();
+    // 应用主题
+    function applyTheme(theme) {
+        console.log('应用主题:', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        
+        // 更新按钮图标和文本
+        if (theme === 'dark') {
+            if (themeIcon) themeIcon.className = 'fas fa-sun';
+            if (themeText) themeText.textContent = '浅色主题';
+        } else {
+            if (themeIcon) themeIcon.className = 'fas fa-moon';
+            if (themeText) themeText.textContent = '暗色主题';
         }
-    }, 1000);
+    }
+    
+    // 全局主题切换函数
+    function toggleTheme() {
+        console.log('主题切换按钮被点击 - toggleTheme函数被调用');
+        console.log('当前主题:', currentTheme);
+        
+        // 切换主题
+        currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+        console.log('切换到主题:', currentTheme);
+        
+        // 应用新主题
+        applyTheme(currentTheme);
+        
+        // 保存到本地存储
+        localStorage.setItem('configDeduplicator_theme', currentTheme);
+        console.log('主题已保存到本地存储');
+        
+        // 显示通知
+        showNotification(`已切换到${currentTheme === 'dark' ? '暗色' : '浅色'}主题`);
+        
+        // 调试：检查HTML元素属性
+        console.log('HTML data-theme属性:', document.documentElement.getAttribute('data-theme'));
+        console.log('主题图标:', themeIcon ? themeIcon.className : '未找到');
+        console.log('主题文本:', themeText ? themeText.textContent : '未找到');
+    }
+    
+    // 将函数暴露到全局作用域
+    window.toggleTheme = toggleTheme;
+    
+    // 简单主题切换函数 - 供内联onclick调用
+    window.simpleToggleTheme = function() {
+        console.log('simpleToggleTheme函数被调用');
+        
+        // 直接获取当前主题
+        const current = document.documentElement.getAttribute('data-theme');
+        console.log('当前主题:', current);
+        
+        // 切换主题
+        const newTheme = current === 'dark' ? 'light' : 'dark';
+        console.log('新主题:', newTheme);
+        
+        // 直接设置属性
+        document.documentElement.setAttribute('data-theme', newTheme);
+        
+        // 更新按钮文本
+        const themeIcon = document.querySelector('#theme-toggle i');
+        const themeText = document.querySelector('#theme-toggle .theme-text');
+        
+        if (themeIcon) {
+            themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        
+        if (themeText) {
+            themeText.textContent = newTheme === 'dark' ? '浅色主题' : '暗色主题';
+        }
+        
+        // 保存到本地存储
+        localStorage.setItem('configDeduplicator_theme', newTheme);
+        
+        // 显示通知（使用现有的通知系统）
+        showNotification(`已切换到${newTheme === 'dark' ? '暗色' : '浅色'}主题`);
+    };
+    
+    // 首先初始化主题功能
+    initTheme();
+    
+    // 注释掉页面加载时的自动处理，让用户手动操作
+    // 这样可以确保主题切换按钮立即响应
+    // setTimeout(() => {
+    //     if (!savedInput && inputText.value.trim()) {
+    //         // 先等待一小段时间确保UI完全就绪
+    //         setTimeout(() => {
+    //             processBtn.click();
+    //         }, 300);
+    //     }
+    // }, 500);
 });
