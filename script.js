@@ -236,25 +236,266 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const keywords = keywordsInput.value;
+        const text = inputText.value;
         
-        const processed = removeDuplicateBlocks(
-            inputText.value, 
-            keywords
-        );
+        // 检查文本大小
+        const lineCount = text.split('\n').length;
+        const isLargeFile = lineCount > 100000; // 超过10万行视为大文件
         
-        outputText.value = processed.result;
-        
-        // 更新统计信息
-        processTime.textContent = processed.timeTaken;
-        originalBlocks.textContent = processed.totalBlocks;
-        keptBlocks.textContent = processed.keptBlocks;
-        removedBlocks.textContent = processed.removedBlocks;
-        
-        updateLineCounts();
-        
-        const message = `处理完成！删除了 ${processed.removedBlocks} 个重复块，保留了 ${processed.keptBlocks} 个唯一块。`;
-        showNotification(message);
+        if (isLargeFile) {
+            // 使用大文本处理模式
+            processLargeText(text, keywords);
+        } else {
+            // 使用普通处理模式
+            const processed = removeDuplicateBlocks(text, keywords);
+            
+            outputText.value = processed.result;
+            
+            // 更新统计信息
+            processTime.textContent = processed.timeTaken;
+            originalBlocks.textContent = processed.totalBlocks;
+            keptBlocks.textContent = processed.keptBlocks;
+            removedBlocks.textContent = processed.removedBlocks;
+            
+            updateLineCounts();
+            
+            const message = `处理完成！删除了 ${processed.removedBlocks} 个重复块，保留了 ${processed.keptBlocks} 个唯一块。`;
+            showNotification(message);
+        }
     });
+    
+    // 大文本处理函数
+    function processLargeText(text, keywords) {
+        const startTime = performance.now();
+        const lines = text.split('\n');
+        const totalLines = lines.length;
+        
+        // 显示进度指示器
+        const progressContainer = document.getElementById('progress-container');
+        const progressText = document.getElementById('progress-text');
+        const progressFill = document.getElementById('progress-fill');
+        const progressDetail = document.getElementById('progress-detail');
+        const progressPercentage = document.getElementById('progress-percentage');
+        
+        progressContainer.style.display = 'block';
+        progressText.textContent = '正在处理大文本...';
+        
+        // 清理关键字
+        const keywordList = keywords.split(',')
+            .map(k => k.trim())
+            .filter(k => k.length > 0);
+        
+        if (keywordList.length === 0) {
+            keywordList.push('controller', 'router', 'interface');
+        }
+        
+        // 用于去重的Map
+        const blockMap = new Map();
+        let totalBlocks = 0;
+        let currentBlock = [];
+        let currentBlockKey = '';
+        let inBlock = false;
+        
+        // 分块处理参数
+        const chunkSize = 10000; // 每块处理10000行
+        let currentChunk = 0;
+        const totalChunks = Math.ceil(totalLines / chunkSize);
+        
+        // 异步处理函数
+        function processChunk() {
+            const chunkStart = currentChunk * chunkSize;
+            const chunkEnd = Math.min(chunkStart + chunkSize, totalLines);
+            
+            // 处理当前块
+            for (let i = chunkStart; i < chunkEnd; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                
+                // 检查是否是新块的开始
+                const isBlockStart = keywordList.some(keyword => trimmedLine.startsWith(keyword));
+                
+                if (isBlockStart) {
+                    totalBlocks++;
+                    
+                    // 如果已经有正在收集的块，先处理它
+                    if (inBlock && currentBlock.length > 0) {
+                        const normalizedKey = currentBlock.join('\n').trim();
+                        
+                        // 如果这个块还没有出现过，保存它
+                        if (!blockMap.has(normalizedKey)) {
+                            blockMap.set(normalizedKey, [...currentBlock]);
+                        }
+                        
+                        // 重置当前块
+                        currentBlock = [];
+                        currentBlockKey = '';
+                    }
+                    
+                    // 开始新块
+                    inBlock = true;
+                    currentBlock.push(line);
+                    currentBlockKey = line.trim();
+                } else if (inBlock) {
+                    // 继续收集当前块
+                    currentBlock.push(line);
+                    
+                    // 如果遇到空行，检查是否是块的结束
+                    if (trimmedLine === '') {
+                        // 检查下一行是否是新块的开始
+                        if (i + 1 < totalLines) {
+                            const nextLine = lines[i + 1].trim();
+                            const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
+                            
+                            // 如果下一行是新块，则当前块结束
+                            if (isNextBlockStart) {
+                                const normalizedKey = currentBlock.join('\n').trim();
+                                
+                                if (!blockMap.has(normalizedKey)) {
+                                    blockMap.set(normalizedKey, [...currentBlock]);
+                                }
+                                
+                                currentBlock = [];
+                                currentBlockKey = '';
+                                inBlock = false;
+                            }
+                        }
+                    }
+                }
+                
+                // 更新进度（每1000行更新一次）
+                if (i % 1000 === 0) {
+                    const processedLines = i + 1;
+                    const progress = (processedLines / totalLines) * 100;
+                    
+                    // 更新进度UI
+                    progressFill.style.width = `${progress}%`;
+                    progressDetail.textContent = `已处理 ${processedLines.toLocaleString()} 行 / 总共 ${totalLines.toLocaleString()} 行`;
+                    progressPercentage.textContent = `${progress.toFixed(1)}%`;
+                }
+            }
+            
+            currentChunk++;
+            
+            // 检查是否还有更多块需要处理
+            if (currentChunk < totalChunks) {
+                // 使用setTimeout避免阻塞UI
+                setTimeout(processChunk, 0);
+            } else {
+                // 处理最后一个块（如果存在）
+                if (currentBlock.length > 0) {
+                    const normalizedKey = currentBlock.join('\n').trim();
+                    if (!blockMap.has(normalizedKey)) {
+                        blockMap.set(normalizedKey, [...currentBlock]);
+                    }
+                }
+                
+                // 构建最终结果
+                finishProcessing();
+            }
+        }
+        
+        function finishProcessing() {
+            const endTime = performance.now();
+            const timeTaken = (endTime - startTime).toFixed(2);
+            
+            // 构建结果字符串
+            const resultLines = [];
+            const seenKeys = new Set();
+            
+            // 重新遍历原始行，按原始顺序构建结果
+            let tempBlock = [];
+            let tempBlockKey = '';
+            let tempInBlock = false;
+            
+            for (let i = 0; i < totalLines; i++) {
+                const line = lines[i];
+                const trimmedLine = line.trim();
+                
+                // 检查是否是新块的开始
+                const isBlockStart = keywordList.some(keyword => trimmedLine.startsWith(keyword));
+                
+                if (isBlockStart) {
+                    // 如果已经有正在收集的块，先处理它
+                    if (tempInBlock && tempBlock.length > 0) {
+                        const key = tempBlock.join('\n').trim();
+                        
+                        // 如果是第一个出现的块，添加到结果中
+                        if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            resultLines.push(...tempBlock);
+                        }
+                        
+                        // 重置临时块
+                        tempBlock = [];
+                        tempBlockKey = '';
+                    }
+                    
+                    // 开始新块
+                    tempInBlock = true;
+                    tempBlock.push(line);
+                    tempBlockKey = line.trim();
+                } else if (tempInBlock) {
+                    // 继续收集当前块
+                    tempBlock.push(line);
+                    
+                    // 如果遇到空行，检查是否是块的结束
+                    if (trimmedLine === '') {
+                        // 检查下一行是否是新块的开始
+                        if (i + 1 < totalLines) {
+                            const nextLine = lines[i + 1].trim();
+                            const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
+                            
+                            // 如果下一行是新块，则当前块结束
+                            if (isNextBlockStart) {
+                                const key = tempBlock.join('\n').trim();
+                                
+                                // 如果是第一个出现的块，添加到结果中
+                                if (!seenKeys.has(key)) {
+                                    seenKeys.add(key);
+                                    resultLines.push(...tempBlock);
+                                }
+                                
+                                tempBlock = [];
+                                tempBlockKey = '';
+                                tempInBlock = false;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 处理最后一个块（如果存在）
+            if (tempBlock.length > 0) {
+                const key = tempBlock.join('\n').trim();
+                if (!seenKeys.has(key)) {
+                    seenKeys.add(key);
+                    resultLines.push(...tempBlock);
+                }
+            }
+            
+            // 构建最终结果字符串
+            const result = resultLines.join('\n');
+            
+            // 更新UI
+            outputText.value = result;
+            processTime.textContent = timeTaken;
+            originalBlocks.textContent = totalBlocks;
+            keptBlocks.textContent = seenKeys.size;
+            removedBlocks.textContent = totalBlocks - seenKeys.size;
+            
+            updateLineCounts();
+            
+            // 隐藏进度指示器
+            progressContainer.style.display = 'none';
+            
+            // 显示完成通知
+            const message = `处理完成！删除了 ${totalBlocks - seenKeys.size} 个重复块，保留了 ${seenKeys.size} 个唯一块。耗时 ${timeTaken} 毫秒。`;
+            showNotification(message);
+        }
+        
+        // 开始处理
+        processChunk();
+    }
     
     // 复制结果按钮点击事件
     copyBtn.addEventListener('click', function() {
@@ -358,32 +599,144 @@ controller mtn-fgclient 4
         showNotification('结果已导出为文本文件！');
     });
     
+    // 文件上传功能
+    const fileInput = document.getElementById('file-input');
+    const fileUploadBtn = document.getElementById('file-upload-btn');
+    
+    fileUploadBtn.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // 检查文件大小（限制为100MB）
+        const maxSize = 100 * 1024 * 1024; // 100MB
+        if (file.size > maxSize) {
+            showNotification('文件太大！请选择小于100MB的文件。', true);
+            fileInput.value = '';
+            return;
+        }
+        
+        // 检查文件类型
+        const allowedExtensions = ['.txt', '.conf', '.cfg', '.config', '.log'];
+        const fileName = file.name.toLowerCase();
+        const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+        
+        if (!isValidExtension) {
+            showNotification('不支持的文件类型！请选择.txt、.conf、.cfg、.config或.log文件。', true);
+            fileInput.value = '';
+            return;
+        }
+        
+        // 显示文件信息
+        showNotification(`正在读取文件: ${file.name} (${formatFileSize(file.size)})`);
+        
+        // 读取文件内容
+        const reader = new FileReader();
+        
+        reader.onload = function(event) {
+            const fileContent = event.target.result;
+            
+            // 对于大文件，不显示在文本框中，直接处理
+            const lineCount = fileContent.split('\n').length;
+            
+            if (lineCount > 50000) {
+                // 大文件：不显示在输入框，直接处理
+                showNotification(`文件读取完成，共 ${lineCount.toLocaleString()} 行。开始处理...`);
+                
+                // 清空输入框，避免卡死
+                inputText.value = '';
+                updateLineCounts();
+                
+                // 直接处理文件内容
+                setTimeout(() => {
+                    processTextDirectly(fileContent, keywordsInput.value);
+                }, 100);
+            } else {
+                // 小文件：显示在输入框
+                inputText.value = fileContent;
+                updateLineCounts();
+                showNotification(`文件已加载到输入框，共 ${lineCount} 行。`);
+            }
+            
+            // 重置文件输入
+            fileInput.value = '';
+        };
+        
+        reader.onerror = function() {
+            showNotification('文件读取失败！', true);
+            fileInput.value = '';
+        };
+        
+        reader.readAsText(file, 'UTF-8');
+    });
+    
+    // 直接处理文本（不显示在输入框）
+    function processTextDirectly(text, keywords) {
+        const lineCount = text.split('\n').length;
+        const isLargeFile = lineCount > 100000;
+        
+        if (isLargeFile) {
+            // 使用大文本处理模式
+            processLargeText(text, keywords);
+        } else {
+            // 使用普通处理模式
+            const processed = removeDuplicateBlocks(text, keywords);
+            
+            outputText.value = processed.result;
+            
+            // 更新统计信息
+            processTime.textContent = processed.timeTaken;
+            originalBlocks.textContent = processed.totalBlocks;
+            keptBlocks.textContent = processed.keptBlocks;
+            removedBlocks.textContent = processed.removedBlocks;
+            
+            updateLineCounts();
+            
+            const message = `处理完成！删除了 ${processed.removedBlocks} 个重复块，保留了 ${processed.keptBlocks} 个唯一块。`;
+            showNotification(message);
+        }
+    }
+    
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
     // 实时更新行数统计
     inputText.addEventListener('input', updateLineCounts);
     
     // 初始化时更新行数统计
     updateLineCounts();
     
-    // 自动保存功能
-    let autoSaveTimer;
-    inputText.addEventListener('input', function() {
-        clearTimeout(autoSaveTimer);
-        autoSaveTimer = setTimeout(() => {
-            localStorage.setItem('configDeduplicator_input', inputText.value);
-            localStorage.setItem('configDeduplicator_keywords', keywordsInput.value);
-        }, 1000);
-    });
+    // 注释掉自动保存功能 - 用户希望每次刷新显示默认值
+    // let autoSaveTimer;
+    // inputText.addEventListener('input', function() {
+    //     clearTimeout(autoSaveTimer);
+    //     autoSaveTimer = setTimeout(() => {
+    //         localStorage.setItem('configDeduplicator_input', inputText.value);
+    //         localStorage.setItem('configDeduplicator_keywords', keywordsInput.value);
+    //     }, 1000);
+    // });
     
-    // 加载保存的内容
-    const savedInput = localStorage.getItem('configDeduplicator_input');
-    const savedKeywords = localStorage.getItem('configDeduplicator_keywords');
+    // 不再加载保存的内容，始终使用默认值
+    // 但为了兼容性，先清除之前保存的内容
+    localStorage.removeItem('configDeduplicator_input');
+    localStorage.removeItem('configDeduplicator_keywords');
     
-    if (savedInput) {
-        inputText.value = savedInput;
-    }
-    if (savedKeywords) {
-        keywordsInput.value = savedKeywords;
-    }
+    // 设置默认值
+    const defaultKeywords = 'controller, router, interface, route, tunnel-te, ioam';
+    keywordsInput.value = defaultKeywords;
+    
+    // 输入框已经包含默认的实例文本（在HTML中），所以不需要额外设置
     
     // 注释掉自动处理示例文本的代码，让用户手动点击
     // 这样可以确保主题切换按钮在页面加载时立即可用

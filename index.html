@@ -29,6 +29,14 @@
                 <div class="panel-header">
                     <div class="panel-title"><i class="fas fa-sign-in-alt"></i> 输入配置</div>
                     <div class="counter">行数: <span id="input-line-count">0</span></div>
+                    <div class="panel-header-actions">
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="file-input" accept=".txt,.conf,.cfg,.config,.log" style="display: none;">
+                            <button id="file-upload-btn" class="btn btn-secondary btn-small">
+                                <i class="fas fa-upload"></i> 导入文件
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <textarea id="input-text" class="input-area" placeholder="请粘贴您的配置文本...">
 controller mtn-fgclient 1
@@ -69,6 +77,11 @@ controller mtn-fgclient 4
                 <div class="panel-header">
                     <div class="panel-title"><i class="fas fa-sign-out-alt"></i> 输出去重结果</div>
                     <div class="counter">行数: <span id="output-line-count">0</span></div>
+                    <div class="panel-header-actions">
+                        <button id="export-btn" class="btn btn-secondary btn-small">
+                            <i class="fas fa-download"></i> 导出结果
+                        </button>
+                    </div>
                 </div>
                 <textarea id="output-text" class="output-area" readonly placeholder="去重后的配置将显示在这里..."></textarea>
             </div>
@@ -100,9 +113,6 @@ controller mtn-fgclient 4
                     <button id="example-btn" class="btn btn-secondary">
                         <i class="fas fa-file-alt"></i> 加载示例
                     </button>
-                    <button id="export-btn" class="btn btn-secondary">
-                        <i class="fas fa-download"></i> 导出结果
-                    </button>
                 </div>
                 
                 <div class="stats">
@@ -117,6 +127,21 @@ controller mtn-fgclient 4
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-times-circle removed"></i> 删除块: <span id="removed-blocks" class="stat-value removed">0</span> 个
+                    </div>
+                </div>
+                
+                <!-- 进度指示器 -->
+                <div id="progress-container" class="progress-container" style="display: none; margin-top: 20px;">
+                    <div class="progress-header">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <span id="progress-text">正在处理...</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-stats">
+                        <span id="progress-detail">已处理 0 行 / 总共 0 行</span>
+                        <span id="progress-percentage">0%</span>
                     </div>
                 </div>
             </div>

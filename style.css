@@ -201,6 +201,23 @@ h1 {
     padding-bottom: 10px;
     border-bottom: 1px solid #eee;
     flex-shrink: 0;
+    gap: 15px;
+}
+
+.panel-header-actions {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.btn-small {
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    min-width: auto !important;
+}
+
+.file-upload-wrapper {
+    display: inline-block;
 }
 
 .panel-title {
@@ -445,6 +462,76 @@ textarea::-webkit-scrollbar-thumb {
 
 textarea::-webkit-scrollbar-thumb:hover {
     background: var(--scrollbar-thumb-hover);
+}
+
+/* 进度指示器样式 */
+.progress-container {
+    background-color: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.progress-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.progress-header i {
+    color: var(--success-color);
+}
+
+.progress-bar {
+    height: 12px;
+    background-color: var(--bg-quaternary);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--success-color), #2ecc71);
+    border-radius: 6px;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-tertiary);
+}
+
+.progress-stats span:last-child {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* 大文本处理警告 */
+.large-file-warning {
+    background-color: rgba(231, 76, 60, 0.1);
+    border: 1px solid var(--removed-color);
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 15px;
+    display: none;
+}
+
+.large-file-warning i {
+    color: var(--removed-color);
+    margin-right: 10px;
+}
+
+.large-file-warning p {
+    margin: 5px 0;
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 /* 响应式调整 - 中等尺寸 */
