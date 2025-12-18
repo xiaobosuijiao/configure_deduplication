@@ -240,24 +240,59 @@ h1 {
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* 文本框包装容器 */
+.textarea-wrapper {
+    display: flex;
+    width: 100%;
+    flex-grow: 1;
+    min-height: 400px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    border: 2px solid var(--input-border);
+    background-color: var(--input-bg);
+    transition: border-color 0.3s, background-color 0.3s;
+}
+
+/* 行号区域 */
+.line-numbers {
+    width: 50px;
+    min-width: 50px;
+    padding: 20px 10px 20px 15px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 15px;
+    line-height: 1.6;
+    text-align: right;
+    color: var(--text-tertiary);
+    background-color: var(--bg-quaternary);
+    border-right: 1px solid var(--border-color);
+    user-select: none;
+    overflow: hidden;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.line-numbers span {
+    display: block;
+}
+
 /* 文本框样式 - 调整最小高度 */
 textarea {
-    width: 100%;
     flex-grow: 1;
     min-height: 400px; /* 调整为400px（原本是500px） */
     padding: 20px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     font-size: 15px;
     line-height: 1.6;
-    border: 2px solid var(--input-border);
-    border-radius: 8px;
+    border: none;
+    border-radius: 0;
     resize: vertical;
-    transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s, color 0.3s;
+    transition: background-color 0.3s, color 0.3s;
     overflow-y: auto;
     overflow-x: auto;
     tab-size: 4;
-    background-color: var(--input-bg);
+    background-color: transparent;
     color: var(--text-primary);
+    outline: none;
 }
 
 textarea:focus {
@@ -272,7 +307,16 @@ textarea:focus {
 
 .output-area {
     border-color: var(--output-border);
-    background-color: var(--output-bg);
+}
+
+/* 输出面板的行号区域特殊样式 */
+.panel:last-child .textarea-wrapper {
+    border-color: var(--output-border);
+}
+
+.panel:last-child .line-numbers {
+    background-color: rgba(46, 204, 113, 0.1);
+    border-right-color: var(--output-border);
 }
 
 .control-panel {

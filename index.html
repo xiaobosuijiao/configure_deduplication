@@ -38,7 +38,9 @@
                         </div>
                     </div>
                 </div>
-                <textarea id="input-text" class="input-area" placeholder="请粘贴您的配置文本...">
+                <div class="textarea-wrapper">
+                    <div class="line-numbers" id="input-line-numbers"></div>
+                    <textarea id="input-text" class="input-area" placeholder="请粘贴您的配置文本...">
 controller mtn-fgclient 1
  bind mtn-client 1/301 fg-timeslot 0
  work-mode satof
@@ -71,6 +73,7 @@ controller mtn-fgclient 4
   bas send enable
  !
 !</textarea>
+                </div>
             </div>
             
             <div class="panel">
@@ -83,7 +86,10 @@ controller mtn-fgclient 4
                         </button>
                     </div>
                 </div>
-                <textarea id="output-text" class="output-area" readonly placeholder="去重后的配置将显示在这里..."></textarea>
+                <div class="textarea-wrapper">
+                    <div class="line-numbers" id="output-line-numbers"></div>
+                    <textarea id="output-text" class="output-area" readonly placeholder="去重后的配置将显示在这里..."></textarea>
+                </div>
             </div>
             
             <div class="control-panel">

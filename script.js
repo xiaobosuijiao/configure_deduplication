@@ -13,6 +13,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationText = document.getElementById('notification-text');
     const themeToggleBtn = document.getElementById('theme-toggle');
     
+    // 行号元素
+    const inputLineNumbers = document.getElementById('input-line-numbers');
+    const outputLineNumbers = document.getElementById('output-line-numbers');
+    
     // 主题相关元素（稍后初始化）
     let themeIcon, themeText;
     
@@ -24,12 +28,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const keptBlocks = document.getElementById('kept-blocks');
     const removedBlocks = document.getElementById('removed-blocks');
     
-    // 更新行数统计
+    // 更新行数统计和行号
     function updateLineCounts() {
         const inputLines = inputText.value.split('\n').length;
         const outputLines = outputText.value.split('\n').length;
         inputLineCount.textContent = inputLines;
         outputLineCount.textContent = outputLines;
+        
+        // 更新行号显示
+        updateLineNumbers(inputText, inputLineNumbers);
+        updateLineNumbers(outputText, outputLineNumbers);
+    }
+    
+    // 更新行号显示
+    function updateLineNumbers(textarea, lineNumbersElement) {
+        const lines = textarea.value.split('\n').length;
+        const lineNumbers = [];
+        
+        // 生成行号
+        for (let i = 1; i <= lines; i++) {
+            lineNumbers.push(`<span>${i}</span>`);
+        }
+        
+        // 更新行号显示
+        lineNumbersElement.innerHTML = lineNumbers.join('');
+        
+        // 同步滚动
+        syncScroll(textarea, lineNumbersElement);
+    }
+    
+    // 同步文本框和行号区域的滚动
+    function syncScroll(textarea, lineNumbersElement) {
+        // 移除之前的滚动事件监听器（避免重复）
+        textarea.removeEventListener('scroll', handleScroll);
+        
+        function handleScroll() {
+            lineNumbersElement.scrollTop = textarea.scrollTop;
+        }
+        
+        textarea.addEventListener('scroll', handleScroll);
+    }
+    
+    // 初始化行号显示
+    function initLineNumbers() {
+        // 初始更新行号
+        updateLineNumbers(inputText, inputLineNumbers);
+        updateLineNumbers(outputText, outputLineNumbers);
+        
+        // 监听输入变化
+        inputText.addEventListener('input', function() {
+            updateLineNumbers(inputText, inputLineNumbers);
+        });
+        
+        // 输出框内容变化时也更新行号
+        const observer = new MutationObserver(function() {
+            updateLineNumbers(outputText, outputLineNumbers);
+        });
+        
+        observer.observe(outputText, { childList: false, characterData: true, subtree: true });
     }
     
     // 显示通知
@@ -714,8 +770,9 @@ controller mtn-fgclient 4
     // 实时更新行数统计
     inputText.addEventListener('input', updateLineCounts);
     
-    // 初始化时更新行数统计
+    // 初始化时更新行数统计和行号
     updateLineCounts();
+    initLineNumbers();
     
     // 注释掉自动保存功能 - 用户希望每次刷新显示默认值
     // let autoSaveTimer;
