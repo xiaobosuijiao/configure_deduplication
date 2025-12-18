@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const exampleBtn = document.getElementById('example-btn');
     const exportBtn = document.getElementById('export-btn');
     const keywordsInput = document.getElementById('keywords');
+    const blockEndInput = document.getElementById('block-end');
     const notification = document.getElementById('notification');
     const notificationText = document.getElementById('notification-text');
     const themeToggleBtn = document.getElementById('theme-toggle');
@@ -108,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // 核心去重算法 - 简洁高效版本
-    function removeDuplicateBlocks(text, keywords) {
+    function removeDuplicateBlocks(text, keywords, blockEndMarker = '!') {
         const startTime = performance.now();
         
         // 清理关键字
@@ -122,15 +123,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 将文本分割为行
         const lines = text.split('\n');
-        const blocks = [];
         const blockMap = new Map(); // 用于去重
         
         let currentBlock = [];
-        let currentBlockKey = '';
         let inBlock = false;
         let totalBlocks = 0;
         
-        // 遍历每一行
+        // 第一遍：识别所有块并去重
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
@@ -152,26 +151,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // 重置当前块
                     currentBlock = [];
-                    currentBlockKey = '';
                 }
                 
                 // 开始新块
                 inBlock = true;
                 currentBlock.push(line);
-                currentBlockKey = line.trim();
             } else if (inBlock) {
                 // 继续收集当前块
                 currentBlock.push(line);
                 
-                // 如果遇到空行，检查是否是块的结束
-                if (trimmedLine === '') {
-                    // 检查下一行是否是新块的开始
-                    if (i + 1 < lines.length) {
-                        const nextLine = lines[i + 1].trim();
+                // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                if (trimmedLine === blockEndMarker) {
+                    // 查找后续所有连续的块结束标记行
+                    let nextIdx = i + 1;
+                    while (nextIdx < lines.length && lines[nextIdx].trim() === blockEndMarker) {
+                        // 将连续的块结束标记添加到当前块中
+                        currentBlock.push(lines[nextIdx]);
+                        i = nextIdx; // 跳过这些行
+                        nextIdx++;
+                    }
+                    
+                    // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
+                    if (nextIdx < lines.length) {
+                        const nextLine = lines[nextIdx].trim();
                         const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
                         
-                        // 如果下一行是新块，则当前块结束
-                        if (isNextBlockStart) {
+                        // 如果下一行是新块的开始或者是数字，则结束当前块
+                        if (isNextBlockStart || /^\d+$/.test(nextLine)) {
                             const normalizedKey = currentBlock.join('\n').trim();
                             
                             if (!blockMap.has(normalizedKey)) {
@@ -179,9 +185,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             currentBlock = [];
-                            currentBlockKey = '';
                             inBlock = false;
                         }
+                        // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
+                    } else {
+                        // 最后一行是块结束标记，结束当前块
+                        const normalizedKey = currentBlock.join('\n').trim();
+                        
+                        if (!blockMap.has(normalizedKey)) {
+                            blockMap.set(normalizedKey, [...currentBlock]);
+                        }
+                        
+                        currentBlock = [];
+                        inBlock = false;
                     }
                 }
             }
@@ -195,14 +211,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 构建结果 - 保持原始顺序
+        // 第二遍：构建结果，保持原始顺序
         const resultLines = [];
         const seenKeys = new Set();
         
-        // 重新遍历原始行，按原始顺序构建结果
-        let tempBlock = [];
-        let tempBlockKey = '';
-        let tempInBlock = false;
+        currentBlock = [];
+        inBlock = false;
         
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
@@ -213,60 +227,81 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (isBlockStart) {
                 // 如果已经有正在收集的块，先处理它
-                if (tempInBlock && tempBlock.length > 0) {
-                    const key = tempBlock.join('\n').trim();
+                if (inBlock && currentBlock.length > 0) {
+                    const key = currentBlock.join('\n').trim();
                     
                     // 如果是第一个出现的块，添加到结果中
                     if (!seenKeys.has(key)) {
                         seenKeys.add(key);
-                        resultLines.push(...tempBlock);
+                        resultLines.push(...currentBlock);
                     }
                     
-                    // 重置临时块
-                    tempBlock = [];
-                    tempBlockKey = '';
+                    // 重置当前块
+                    currentBlock = [];
                 }
                 
                 // 开始新块
-                tempInBlock = true;
-                tempBlock.push(line);
-                tempBlockKey = line.trim();
-            } else if (tempInBlock) {
+                inBlock = true;
+                currentBlock.push(line);
+            } else if (inBlock) {
                 // 继续收集当前块
-                tempBlock.push(line);
+                currentBlock.push(line);
                 
-                // 如果遇到空行，检查是否是块的结束
-                if (trimmedLine === '') {
-                    // 检查下一行是否是新块的开始
-                    if (i + 1 < lines.length) {
-                        const nextLine = lines[i + 1].trim();
+                // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                if (trimmedLine === blockEndMarker) {
+                    // 查找后续所有连续的块结束标记行
+                    let nextIdx = i + 1;
+                    while (nextIdx < lines.length && lines[nextIdx].trim() === blockEndMarker) {
+                        // 将连续的块结束标记添加到当前块中
+                        currentBlock.push(lines[nextIdx]);
+                        i = nextIdx; // 跳过这些行
+                        nextIdx++;
+                    }
+                    
+                    // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
+                    if (nextIdx < lines.length) {
+                        const nextLine = lines[nextIdx].trim();
                         const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
                         
-                        // 如果下一行是新块，则当前块结束
-                        if (isNextBlockStart) {
-                            const key = tempBlock.join('\n').trim();
+                        // 如果下一行是新块的开始或者是数字，则结束当前块
+                        if (isNextBlockStart || /^\d+$/.test(nextLine)) {
+                            const key = currentBlock.join('\n').trim();
                             
                             // 如果是第一个出现的块，添加到结果中
                             if (!seenKeys.has(key)) {
                                 seenKeys.add(key);
-                                resultLines.push(...tempBlock);
+                                resultLines.push(...currentBlock);
                             }
                             
-                            tempBlock = [];
-                            tempBlockKey = '';
-                            tempInBlock = false;
+                            currentBlock = [];
+                            inBlock = false;
                         }
+                        // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
+                    } else {
+                        // 最后一行是块结束标记，结束当前块
+                        const key = currentBlock.join('\n').trim();
+                        
+                        if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            resultLines.push(...currentBlock);
+                        }
+                        
+                        currentBlock = [];
+                        inBlock = false;
                     }
                 }
+            } else {
+                // 不在块中的行（如"1223"这样的行）直接添加到结果中
+                resultLines.push(line);
             }
         }
         
         // 处理最后一个块（如果存在）
-        if (tempBlock.length > 0) {
-            const key = tempBlock.join('\n').trim();
+        if (currentBlock.length > 0) {
+            const key = currentBlock.join('\n').trim();
             if (!seenKeys.has(key)) {
                 seenKeys.add(key);
-                resultLines.push(...tempBlock);
+                resultLines.push(...currentBlock);
             }
         }
         
@@ -292,6 +327,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const keywords = keywordsInput.value;
+        const blockEndMarker = blockEndInput.value.trim() || '!';
         const text = inputText.value;
         
         // 检查文本大小
@@ -300,10 +336,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (isLargeFile) {
             // 使用大文本处理模式
-            processLargeText(text, keywords);
+            processLargeText(text, keywords, blockEndMarker);
         } else {
             // 使用普通处理模式
-            const processed = removeDuplicateBlocks(text, keywords);
+            const processed = removeDuplicateBlocks(text, keywords, blockEndMarker);
             
             outputText.value = processed.result;
             
@@ -321,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // 大文本处理函数
-    function processLargeText(text, keywords) {
+    function processLargeText(text, keywords, blockEndMarker = '!') {
         const startTime = performance.now();
         const lines = text.split('\n');
         const totalLines = lines.length;
@@ -395,38 +431,47 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 继续收集当前块
                     currentBlock.push(line);
                     
-                    // 如果遇到空行，检查是否是块的结束
-                    if (trimmedLine === '') {
-                        // 检查下一行是否是新块的开始
-                        if (i + 1 < totalLines) {
-                            const nextLine = lines[i + 1].trim();
+                    // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                    if (trimmedLine === blockEndMarker) {
+                        // 查找后续所有连续的块结束标记行
+                        let nextIdx = i + 1;
+                        while (nextIdx < lines.length && lines[nextIdx].trim() === blockEndMarker) {
+                            // 将连续的块结束标记添加到当前块中
+                            currentBlock.push(lines[nextIdx]);
+                            i = nextIdx; // 跳过这些行
+                            nextIdx++;
+                        }
+                        
+                        // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
+                        if (nextIdx < lines.length) {
+                            const nextLine = lines[nextIdx].trim();
                             const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
                             
-                            // 如果下一行是新块，则当前块结束
-                            if (isNextBlockStart) {
+                            // 如果下一行是新块的开始或者是数字，则结束当前块
+                            if (isNextBlockStart || /^\d+$/.test(nextLine)) {
                                 const normalizedKey = currentBlock.join('\n').trim();
                                 
+                                // 如果这个块还没有出现过，保存它
                                 if (!blockMap.has(normalizedKey)) {
                                     blockMap.set(normalizedKey, [...currentBlock]);
                                 }
                                 
                                 currentBlock = [];
-                                currentBlockKey = '';
                                 inBlock = false;
                             }
+                            // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
+                        } else {
+                            // 最后一行是块结束标记，结束当前块
+                            const normalizedKey = currentBlock.join('\n').trim();
+                            
+                            if (!blockMap.has(normalizedKey)) {
+                                blockMap.set(normalizedKey, [...currentBlock]);
+                            }
+                            
+                            currentBlock = [];
+                            inBlock = false;
                         }
                     }
-                }
-                
-                // 更新进度（每1000行更新一次）
-                if (i % 1000 === 0) {
-                    const processedLines = i + 1;
-                    const progress = (processedLines / totalLines) * 100;
-                    
-                    // 更新进度UI
-                    progressFill.style.width = `${progress}%`;
-                    progressDetail.textContent = `已处理 ${processedLines.toLocaleString()} 行 / 总共 ${totalLines.toLocaleString()} 行`;
-                    progressPercentage.textContent = `${progress.toFixed(1)}%`;
                 }
             }
             
@@ -494,15 +539,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 继续收集当前块
                     tempBlock.push(line);
                     
-                    // 如果遇到空行，检查是否是块的结束
-                    if (trimmedLine === '') {
-                        // 检查下一行是否是新块的开始
-                        if (i + 1 < totalLines) {
-                            const nextLine = lines[i + 1].trim();
+                    // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                    if (trimmedLine === blockEndMarker) {
+                        // 查找后续所有连续的块结束标记行
+                        let nextIdx = i + 1;
+                        while (nextIdx < lines.length && lines[nextIdx].trim() === blockEndMarker) {
+                            // 将连续的块结束标记添加到当前块中
+                            tempBlock.push(lines[nextIdx]);
+                            i = nextIdx; // 跳过这些行
+                            nextIdx++;
+                        }
+                        
+                        // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
+                        if (nextIdx < lines.length) {
+                            const nextLine = lines[nextIdx].trim();
                             const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
                             
-                            // 如果下一行是新块，则当前块结束
-                            if (isNextBlockStart) {
+                            // 如果下一行是新块的开始或者是数字，则结束当前块
+                            if (isNextBlockStart || /^\d+$/.test(nextLine)) {
                                 const key = tempBlock.join('\n').trim();
                                 
                                 // 如果是第一个出现的块，添加到结果中
@@ -515,6 +569,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                 tempBlockKey = '';
                                 tempInBlock = false;
                             }
+                            // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
+                        } else {
+                            // 最后一行是块结束标记，结束当前块
+                            const key = tempBlock.join('\n').trim();
+                            
+                            if (!seenKeys.has(key)) {
+                                seenKeys.add(key);
+                                resultLines.push(...tempBlock);
+                            }
+                            
+                            tempBlock = [];
+                            tempBlockKey = '';
+                            tempInBlock = false;
                         }
                     }
                 }
@@ -733,13 +800,14 @@ controller mtn-fgclient 4
     function processTextDirectly(text, keywords) {
         const lineCount = text.split('\n').length;
         const isLargeFile = lineCount > 100000;
+        const blockEndMarker = blockEndInput.value.trim() || '!';
         
         if (isLargeFile) {
             // 使用大文本处理模式
-            processLargeText(text, keywords);
+            processLargeText(text, keywords, blockEndMarker);
         } else {
             // 使用普通处理模式
-            const processed = removeDuplicateBlocks(text, keywords);
+            const processed = removeDuplicateBlocks(text, keywords, blockEndMarker);
             
             outputText.value = processed.result;
             
