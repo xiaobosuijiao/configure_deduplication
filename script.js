@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const keptBlocks = document.getElementById('kept-blocks');
     const removedBlocks = document.getElementById('removed-blocks');
     
+    // 导出详细结果按钮和格式选择
+    const exportDetailsBtn = document.getElementById('export-details-btn');
+    const exportFormatSelect = document.getElementById('export-format');
+    
+    // 存储最后一次处理的结果
+    let lastProcessedResult = null;
+    
     // 更新行数统计和行号
     function updateLineCounts() {
         const inputLines = inputText.value.split('\n').length;
@@ -108,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 3000);
     }
     
-    // 核心去重算法 - 简洁高效版本
+    // 核心去重算法 - 简洁高效版本（增强版，收集重复块信息）
     function removeDuplicateBlocks(text, keywords, blockEndMarker = '!') {
         const startTime = performance.now();
         
@@ -123,13 +130,17 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 将文本分割为行
         const lines = text.split('\n');
-        const blockMap = new Map(); // 用于去重
+        
+        // 数据结构：存储块信息和重复统计
+        const blockInfoMap = new Map(); // key -> {content: [], count: 0, lineNumbers: []}
+        const blockOccurrences = []; // 记录每个块的出现信息
         
         let currentBlock = [];
+        let currentBlockStartLine = -1;
         let inBlock = false;
         let totalBlocks = 0;
         
-        // 第一遍：识别所有块并去重
+        // 第一遍：识别所有块并统计信息
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
             const trimmedLine = line.trim();
@@ -142,11 +153,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 如果已经有正在收集的块，先处理它
                 if (inBlock && currentBlock.length > 0) {
-                    const normalizedKey = currentBlock.join('\n').trim();
+                    const blockKey = currentBlock.join('\n').trim();
+                    const blockContent = [...currentBlock];
                     
-                    // 如果这个块还没有出现过，保存它
-                    if (!blockMap.has(normalizedKey)) {
-                        blockMap.set(normalizedKey, [...currentBlock]);
+                    // 记录块出现信息
+                    blockOccurrences.push({
+                        key: blockKey,
+                        content: blockContent,
+                        startLine: currentBlockStartLine + 1, // 转换为1-based行号
+                        endLine: i // 当前行是下一个块的开始，所以上一个块结束于i-1
+                    });
+                    
+                    // 更新块信息统计
+                    if (!blockInfoMap.has(blockKey)) {
+                        blockInfoMap.set(blockKey, {
+                            content: blockContent,
+                            count: 1,
+                            lineNumbers: [currentBlockStartLine + 1]
+                        });
+                    } else {
+                        const info = blockInfoMap.get(blockKey);
+                        info.count++;
+                        info.lineNumbers.push(currentBlockStartLine + 1);
                     }
                     
                     // 重置当前块
@@ -155,6 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 开始新块
                 inBlock = true;
+                currentBlockStartLine = i;
                 currentBlock.push(line);
             } else if (inBlock) {
                 // 继续收集当前块
@@ -178,10 +207,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // 如果下一行是新块的开始或者是数字，则结束当前块
                         if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                            const normalizedKey = currentBlock.join('\n').trim();
+                            const blockKey = currentBlock.join('\n').trim();
+                            const blockContent = [...currentBlock];
                             
-                            if (!blockMap.has(normalizedKey)) {
-                                blockMap.set(normalizedKey, [...currentBlock]);
+                            // 记录块出现信息
+                            blockOccurrences.push({
+                                key: blockKey,
+                                content: blockContent,
+                                startLine: currentBlockStartLine + 1,
+                                endLine: i + 1 // 包括最后一行
+                            });
+                            
+                            // 更新块信息统计
+                            if (!blockInfoMap.has(blockKey)) {
+                                blockInfoMap.set(blockKey, {
+                                    content: blockContent,
+                                    count: 1,
+                                    lineNumbers: [currentBlockStartLine + 1]
+                                });
+                            } else {
+                                const info = blockInfoMap.get(blockKey);
+                                info.count++;
+                                info.lineNumbers.push(currentBlockStartLine + 1);
                             }
                             
                             currentBlock = [];
@@ -190,10 +237,28 @@ document.addEventListener('DOMContentLoaded', function() {
                         // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
                     } else {
                         // 最后一行是块结束标记，结束当前块
-                        const normalizedKey = currentBlock.join('\n').trim();
+                        const blockKey = currentBlock.join('\n').trim();
+                        const blockContent = [...currentBlock];
                         
-                        if (!blockMap.has(normalizedKey)) {
-                            blockMap.set(normalizedKey, [...currentBlock]);
+                        // 记录块出现信息
+                        blockOccurrences.push({
+                            key: blockKey,
+                            content: blockContent,
+                            startLine: currentBlockStartLine + 1,
+                            endLine: i + 1 // 包括最后一行
+                        });
+                        
+                        // 更新块信息统计
+                        if (!blockInfoMap.has(blockKey)) {
+                            blockInfoMap.set(blockKey, {
+                                content: blockContent,
+                                count: 1,
+                                lineNumbers: [currentBlockStartLine + 1]
+                            });
+                        } else {
+                            const info = blockInfoMap.get(blockKey);
+                            info.count++;
+                            info.lineNumbers.push(currentBlockStartLine + 1);
                         }
                         
                         currentBlock = [];
@@ -205,9 +270,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 处理最后一个块（如果存在）
         if (currentBlock.length > 0) {
-            const normalizedKey = currentBlock.join('\n').trim();
-            if (!blockMap.has(normalizedKey)) {
-                blockMap.set(normalizedKey, [...currentBlock]);
+            const blockKey = currentBlock.join('\n').trim();
+            const blockContent = [...currentBlock];
+            
+            // 记录块出现信息
+            blockOccurrences.push({
+                key: blockKey,
+                content: blockContent,
+                startLine: currentBlockStartLine + 1,
+                endLine: lines.length // 最后一行
+            });
+            
+            // 更新块信息统计
+            if (!blockInfoMap.has(blockKey)) {
+                blockInfoMap.set(blockKey, {
+                    content: blockContent,
+                    count: 1,
+                    lineNumbers: [currentBlockStartLine + 1]
+                });
+            } else {
+                const info = blockInfoMap.get(blockKey);
+                info.count++;
+                info.lineNumbers.push(currentBlockStartLine + 1);
             }
         }
         
@@ -310,12 +394,29 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTime = performance.now();
         const timeTaken = (endTime - startTime).toFixed(2);
         
+        // 提取重复块信息
+        const duplicateBlocks = [];
+        for (const [key, info] of blockInfoMap.entries()) {
+            if (info.count > 1) {
+                duplicateBlocks.push({
+                    content: info.content.join('\n'),
+                    count: info.count,
+                    lineNumbers: info.lineNumbers,
+                    firstOccurrenceLine: info.lineNumbers[0]
+                });
+            }
+        }
+        
+        // 按重复次数降序排序
+        duplicateBlocks.sort((a, b) => b.count - a.count);
+        
         return {
             result,
             timeTaken,
             totalBlocks,
             keptBlocks: seenKeys.size,
-            removedBlocks: totalBlocks - seenKeys.size
+            removedBlocks: totalBlocks - seenKeys.size,
+            duplicateBlocks
         };
     }
     
@@ -349,6 +450,9 @@ document.addEventListener('DOMContentLoaded', function() {
             keptBlocks.textContent = processed.keptBlocks;
             removedBlocks.textContent = processed.removedBlocks;
             
+            // 保存处理结果
+            lastProcessedResult = processed;
+            
             updateLineCounts();
             
             const message = `处理完成！删除了 ${processed.removedBlocks} 个重复块，保留了 ${processed.keptBlocks} 个唯一块。`;
@@ -356,7 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // 大文本处理函数
+    // 大文本处理函数（增强版，收集重复块信息）
     function processLargeText(text, keywords, blockEndMarker = '!') {
         const startTime = performance.now();
         const lines = text.split('\n');
@@ -381,11 +485,14 @@ document.addEventListener('DOMContentLoaded', function() {
             keywordList.push('controller', 'router', 'interface');
         }
         
-        // 用于去重的Map
-        const blockMap = new Map();
+        // 用于去重的Map和重复块信息收集
+        const blockMap = new Map(); // key -> content
+        const blockInfoMap = new Map(); // key -> {content: [], count: 0, lineNumbers: []}
+        const blockOccurrences = []; // 记录每个块的出现信息
+        
         let totalBlocks = 0;
         let currentBlock = [];
-        let currentBlockKey = '';
+        let currentBlockStartLine = -1;
         let inBlock = false;
         
         // 分块处理参数
@@ -411,22 +518,43 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // 如果已经有正在收集的块，先处理它
                     if (inBlock && currentBlock.length > 0) {
-                        const normalizedKey = currentBlock.join('\n').trim();
+                        const blockKey = currentBlock.join('\n').trim();
+                        const blockContent = [...currentBlock];
                         
-                        // 如果这个块还没有出现过，保存它
-                        if (!blockMap.has(normalizedKey)) {
-                            blockMap.set(normalizedKey, [...currentBlock]);
+                        // 记录块出现信息
+                        blockOccurrences.push({
+                            key: blockKey,
+                            content: blockContent,
+                            startLine: currentBlockStartLine + 1,
+                            endLine: i
+                        });
+                        
+                        // 更新块信息统计
+                        if (!blockInfoMap.has(blockKey)) {
+                            blockInfoMap.set(blockKey, {
+                                content: blockContent,
+                                count: 1,
+                                lineNumbers: [currentBlockStartLine + 1]
+                            });
+                        } else {
+                            const info = blockInfoMap.get(blockKey);
+                            info.count++;
+                            info.lineNumbers.push(currentBlockStartLine + 1);
+                        }
+                        
+                        // 如果这个块还没有出现过，保存到去重Map
+                        if (!blockMap.has(blockKey)) {
+                            blockMap.set(blockKey, blockContent);
                         }
                         
                         // 重置当前块
                         currentBlock = [];
-                        currentBlockKey = '';
                     }
                     
                     // 开始新块
                     inBlock = true;
+                    currentBlockStartLine = i;
                     currentBlock.push(line);
-                    currentBlockKey = line.trim();
                 } else if (inBlock) {
                     // 继续收集当前块
                     currentBlock.push(line);
@@ -449,11 +577,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             // 如果下一行是新块的开始或者是数字，则结束当前块
                             if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                                const normalizedKey = currentBlock.join('\n').trim();
+                                const blockKey = currentBlock.join('\n').trim();
+                                const blockContent = [...currentBlock];
                                 
-                                // 如果这个块还没有出现过，保存它
-                                if (!blockMap.has(normalizedKey)) {
-                                    blockMap.set(normalizedKey, [...currentBlock]);
+                                // 记录块出现信息
+                                blockOccurrences.push({
+                                    key: blockKey,
+                                    content: blockContent,
+                                    startLine: currentBlockStartLine + 1,
+                                    endLine: i + 1
+                                });
+                                
+                                // 更新块信息统计
+                                if (!blockInfoMap.has(blockKey)) {
+                                    blockInfoMap.set(blockKey, {
+                                        content: blockContent,
+                                        count: 1,
+                                        lineNumbers: [currentBlockStartLine + 1]
+                                    });
+                                } else {
+                                    const info = blockInfoMap.get(blockKey);
+                                    info.count++;
+                                    info.lineNumbers.push(currentBlockStartLine + 1);
+                                }
+                                
+                                // 如果这个块还没有出现过，保存到去重Map
+                                if (!blockMap.has(blockKey)) {
+                                    blockMap.set(blockKey, blockContent);
                                 }
                                 
                                 currentBlock = [];
@@ -462,10 +612,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
                         } else {
                             // 最后一行是块结束标记，结束当前块
-                            const normalizedKey = currentBlock.join('\n').trim();
+                            const blockKey = currentBlock.join('\n').trim();
+                            const blockContent = [...currentBlock];
                             
-                            if (!blockMap.has(normalizedKey)) {
-                                blockMap.set(normalizedKey, [...currentBlock]);
+                            // 记录块出现信息
+                            blockOccurrences.push({
+                                key: blockKey,
+                                content: blockContent,
+                                startLine: currentBlockStartLine + 1,
+                                endLine: i + 1
+                            });
+                            
+                            // 更新块信息统计
+                            if (!blockInfoMap.has(blockKey)) {
+                                blockInfoMap.set(blockKey, {
+                                    content: blockContent,
+                                    count: 1,
+                                    lineNumbers: [currentBlockStartLine + 1]
+                                });
+                            } else {
+                                const info = blockInfoMap.get(blockKey);
+                                info.count++;
+                                info.lineNumbers.push(currentBlockStartLine + 1);
+                            }
+                            
+                            // 如果这个块还没有出现过，保存到去重Map
+                            if (!blockMap.has(blockKey)) {
+                                blockMap.set(blockKey, blockContent);
                             }
                             
                             currentBlock = [];
@@ -492,9 +665,33 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // 处理最后一个块（如果存在）
                 if (currentBlock.length > 0) {
-                    const normalizedKey = currentBlock.join('\n').trim();
-                    if (!blockMap.has(normalizedKey)) {
-                        blockMap.set(normalizedKey, [...currentBlock]);
+                    const blockKey = currentBlock.join('\n').trim();
+                    const blockContent = [...currentBlock];
+                    
+                    // 记录块出现信息
+                    blockOccurrences.push({
+                        key: blockKey,
+                        content: blockContent,
+                        startLine: currentBlockStartLine + 1,
+                        endLine: totalLines
+                    });
+                    
+                    // 更新块信息统计
+                    if (!blockInfoMap.has(blockKey)) {
+                        blockInfoMap.set(blockKey, {
+                            content: blockContent,
+                            count: 1,
+                            lineNumbers: [currentBlockStartLine + 1]
+                        });
+                    } else {
+                        const info = blockInfoMap.get(blockKey);
+                        info.count++;
+                        info.lineNumbers.push(currentBlockStartLine + 1);
+                    }
+                    
+                    // 如果这个块还没有出现过，保存到去重Map
+                    if (!blockMap.has(blockKey)) {
+                        blockMap.set(blockKey, blockContent);
                     }
                 }
                 
@@ -606,6 +803,32 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 构建最终结果字符串
             const result = resultLines.join('\n');
+            
+            // 提取重复块信息
+            const duplicateBlocks = [];
+            for (const [key, info] of blockInfoMap.entries()) {
+                if (info.count > 1) {
+                    duplicateBlocks.push({
+                        content: info.content.join('\n'),
+                        count: info.count,
+                        lineNumbers: info.lineNumbers,
+                        firstOccurrenceLine: info.lineNumbers[0]
+                    });
+                }
+            }
+            
+            // 按重复次数降序排序
+            duplicateBlocks.sort((a, b) => b.count - a.count);
+            
+            // 保存处理结果
+            lastProcessedResult = {
+                result,
+                timeTaken,
+                totalBlocks,
+                keptBlocks: seenKeys.size,
+                removedBlocks: totalBlocks - seenKeys.size,
+                duplicateBlocks
+            };
             
             // 更新UI
             outputText.value = result;
@@ -969,7 +1192,7 @@ controller flexe-group 1
     }
     
     // 将函数暴露到全局作用域
-    // window.toggleTheme = toggleTheme;
+    window.toggleTheme = toggleTheme;
     
     // 简单主题切换函数 - 供内联onclick调用
     window.simpleToggleTheme = function() {
@@ -1004,6 +1227,128 @@ controller flexe-group 1
         // 显示通知（使用现有的通知系统）
         showNotification(`已切换到${newTheme === 'dark' ? '暗色' : '浅色'}主题`);
     };
+    
+    // 导出详细结果按钮点击事件
+    exportDetailsBtn.addEventListener('click', function() {
+        if (!lastProcessedResult) {
+            showNotification('请先处理文本以获取重复块信息！', true);
+            return;
+        }
+        
+        if (!lastProcessedResult.duplicateBlocks || lastProcessedResult.duplicateBlocks.length === 0) {
+            showNotification('没有发现重复的文本块！', true);
+            return;
+        }
+        
+        // 获取选择的导出格式
+        const exportFormat = exportFormatSelect.value;
+        
+        let report, mimeType, fileName, message;
+        
+        if (exportFormat === 'csv') {
+            // 构建CSV报告
+            report = buildDuplicateReportCSV(lastProcessedResult);
+            mimeType = 'text/csv;charset=utf-8';
+            fileName = 'duplicate_blocks_report_' + new Date().toISOString().slice(0, 10) + '.csv';
+            message = '重复块详细报告已导出为CSV文件！';
+        } else {
+            // 构建JSON报告 - 使用.txt扩展名避免Windows安全阻止
+            report = buildDuplicateReportJSON(lastProcessedResult);
+            mimeType = 'application/json;charset=utf-8';
+            fileName = 'duplicate_blocks_report_' + new Date().toISOString().slice(0, 10) + '.txt';
+            message = '重复块详细报告已导出为JSON文件（.txt格式）！';
+        }
+        
+        // 导出文件
+        const blob = new Blob([report], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        showNotification(message);
+    });
+    
+    // 构建重复块详细报告（JSON格式）
+    function buildDuplicateReportJSON(processedResult) {
+        const report = {
+            summary: {
+                totalBlocks: processedResult.totalBlocks,
+                keptBlocks: processedResult.keptBlocks,
+                removedBlocks: processedResult.removedBlocks,
+                processingTime: processedResult.timeTaken + ' ms',
+                duplicateBlocksCount: processedResult.duplicateBlocks.length
+            },
+            duplicateBlocks: processedResult.duplicateBlocks.map(block => ({
+                contentPreview: block.content.length > 100 ? block.content.substring(0, 100) + '...' : block.content,
+                content: block.content,
+                count: block.count,
+                lineNumbers: block.lineNumbers,
+                firstOccurrenceLine: block.firstOccurrenceLine
+            })),
+            statistics: {
+                mostFrequentDuplicate: processedResult.duplicateBlocks.length > 0 ? {
+                    count: processedResult.duplicateBlocks[0].count,
+                    firstOccurrenceLine: processedResult.duplicateBlocks[0].firstOccurrenceLine
+                } : null,
+                totalDuplicateOccurrences: processedResult.duplicateBlocks.reduce((sum, block) => sum + (block.count - 1), 0)
+            }
+        };
+        
+        return JSON.stringify(report, null, 2);
+    }
+    
+    // 构建重复块详细报告（CSV格式）
+    function buildDuplicateReportCSV(processedResult) {
+        // CSV头部 - 使用英文
+        let csv = 'Duplicate Blocks Detailed Report\n\n';
+        
+        // 摘要部分 - 使用英文
+        csv += 'Summary\n';
+        csv += 'Total Blocks,' + processedResult.totalBlocks + '\n';
+        csv += 'Kept Blocks,' + processedResult.keptBlocks + '\n';
+        csv += 'Removed Blocks,' + processedResult.removedBlocks + '\n';
+        csv += 'Processing Time (ms),' + processedResult.timeTaken + '\n';
+        csv += 'Duplicate Blocks Count,' + processedResult.duplicateBlocks.length + '\n\n';
+        
+        // 重复块详情 - 使用英文
+        csv += 'Duplicate Blocks Details\n';
+        csv += 'No.,Count,First Occurrence Line,All Occurrence Lines,Content Preview\n';
+        
+        processedResult.duplicateBlocks.forEach((block, index) => {
+            const lineNumbersStr = block.lineNumbers.join('; ');
+            const contentPreview = block.content.length > 100 ? 
+                block.content.substring(0, 100).replace(/"/g, '""') + '...' : 
+                block.content.replace(/"/g, '""');
+            
+            // 处理CSV特殊字符：用双引号包裹包含逗号、换行符或双引号的内容
+            const escapedContent = contentPreview.includes(',') || contentPreview.includes('\n') || contentPreview.includes('"') ?
+                '"' + contentPreview + '"' : contentPreview;
+            
+            csv += `${index + 1},${block.count},${block.firstOccurrenceLine},"${lineNumbersStr}",${escapedContent}\n`;
+        });
+        
+        // 统计信息 - 使用英文
+        csv += '\nStatistics\n';
+        if (processedResult.duplicateBlocks.length > 0) {
+            csv += 'Most Frequent Duplicate Count,' + processedResult.duplicateBlocks[0].count + '\n';
+            csv += 'Most Frequent Duplicate First Line,' + processedResult.duplicateBlocks[0].firstOccurrenceLine + '\n';
+        } else {
+            csv += 'Most Frequent Duplicate Count,0\n';
+            csv += 'Most Frequent Duplicate First Line,N/A\n';
+        }
+        
+        const totalDuplicateOccurrences = processedResult.duplicateBlocks.reduce((sum, block) => sum + (block.count - 1), 0);
+        csv += 'Total Duplicate Occurrences,' + totalDuplicateOccurrences + '\n';
+        
+        // 添加UTF-8 BOM以解决中文乱码问题
+        const BOM = '\uFEFF';
+        return BOM + csv;
+    }
     
     // 首先初始化主题功能
     initTheme();

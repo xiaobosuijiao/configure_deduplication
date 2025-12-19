@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="all.min.css">
 </head>
+
 <body>
     <div class="container">
         <header>
@@ -22,7 +24,7 @@
                 </div>
             </div>
         </header>
-        
+
         <div class="main-content">
             <div class="panel">
                 <div class="panel-header">
@@ -30,7 +32,8 @@
                     <div class="counter">行数: <span id="input-line-count">0</span></div>
                     <div class="panel-header-actions">
                         <div class="file-upload-wrapper">
-                            <input type="file" id="file-input" accept=".txt,.conf,.cfg,.config,.log" style="display: none;">
+                            <input type="file" id="file-input" accept=".txt,.conf,.cfg,.config,.log"
+                                style="display: none;">
                             <button id="file-upload-btn" class="btn btn-secondary btn-small">
                                 <i class="fas fa-upload"></i> 导入文件
                             </button>
@@ -42,7 +45,7 @@
                     <textarea id="input-text" class="input-area" placeholder="请粘贴您的文本..."></textarea>
                 </div>
             </div>
-            
+
             <div class="panel">
                 <div class="panel-header">
                     <div class="panel-title"><i class="fas fa-sign-out-alt"></i> 输出去重结果</div>
@@ -58,7 +61,7 @@
                     <textarea id="output-text" class="output-area" readonly placeholder="去重后的文本将显示在这里..."></textarea>
                 </div>
             </div>
-            
+
             <div class="control-panel">
                 <div class="control-row">
                     <div class="control-group">
@@ -72,7 +75,7 @@
                         <p class="hint">文本块的结束标记，默认为"!"。如果为空，则自动检测到下一个关键字前结束</p>
                     </div>
                 </div>
-                
+
                 <div class="buttons">
                     <button id="process-btn" class="btn btn-primary">
                         <i class="fas fa-bolt"></i> 开始去重处理
@@ -86,8 +89,19 @@
                     <button id="example-btn" class="btn btn-secondary">
                         <i class="fas fa-file-alt"></i> 加载示例
                     </button>
+                    <div class="export-details-wrapper" style="display: flex; align-items: center; gap: 5px;">
+                        <button id="export-details-btn" class="btn btn-secondary">
+                            <i class="fas fa-file-export"></i> 导出详细结果
+                        </button>
+                        <select id="export-format" class="btn btn-secondary"
+                            style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--input-border); background-color: var(--input-bg); color: var(--text-primary);">
+                            <option value="json">JSON (.txt)</option>
+                            <option value="csv">CSV格式</option>
+                        </select>
+                    </div>
                 </div>
-                
+
+
                 <div class="stats">
                     <div class="stat-item">
                         <i class="fas fa-clock"></i> 处理耗时: <span id="process-time" class="stat-value">0</span> 毫秒
@@ -96,13 +110,15 @@
                         <i class="fas fa-cubes"></i> 原文本块: <span id="original-blocks" class="stat-value">0</span> 个
                     </div>
                     <div class="stat-item">
-                        <i class="fas fa-check-circle success"></i> 保留块: <span id="kept-blocks" class="stat-value success">0</span> 个
+                        <i class="fas fa-check-circle success"></i> 保留块: <span id="kept-blocks"
+                            class="stat-value success">0</span> 个
                     </div>
                     <div class="stat-item">
-                        <i class="fas fa-times-circle removed"></i> 删除块: <span id="removed-blocks" class="stat-value removed">0</span> 个
+                        <i class="fas fa-times-circle removed"></i> 删除块: <span id="removed-blocks"
+                            class="stat-value removed">0</span> 个
                     </div>
                 </div>
-                
+
                 <!-- 进度指示器 -->
                 <div id="progress-container" class="progress-container" style="display: none; margin-top: 20px;">
                     <div class="progress-header">
@@ -119,7 +135,7 @@
                 </div>
             </div>
         </div>
-        
+
         <!-- 版权信息 -->
         <footer class="footer">
             <div class="footer-content">
@@ -127,7 +143,7 @@
             </div>
         </footer>
     </div>
-    
+
     <div id="notification" class="notification">
         <i class="fas fa-check-circle"></i>
         <span id="notification-text">操作成功！</span>
@@ -135,4 +151,5 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
