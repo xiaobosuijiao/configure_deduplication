@@ -259,7 +259,7 @@ h1 .theme-text {
     min-width: 50px;
     padding: 20px 10px 20px 15px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1.6;
     text-align: right;
     color: var(--text-tertiary);
@@ -280,7 +280,7 @@ textarea {
     min-height: 400px; /* 调整为400px（原本是500px） */
     padding: 20px;
     font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1.6;
     border: none;
     border-radius: 0;
