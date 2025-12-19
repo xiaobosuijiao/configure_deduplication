@@ -667,9 +667,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 示例按钮点击事件
     exampleBtn.addEventListener('click', function() {
-        const exampleText = `controller mtn-fgclient 1
+        const exampleText = `controller flexe-group 1
+ bind controller flexe-200gi 0/1/0/1 phy-num 1
+ group-number 1
+!
+controller mtn-fgclient 1
  bind mtn-client 1/301 fg-timeslot 0
- work-mode satof
  fgclient-number 1
  fg-oam
   bas send enable
@@ -677,15 +680,17 @@ document.addEventListener('DOMContentLoaded', function() {
 !
 controller mtn-fgclient 2
  bind mtn-client 1/301 fg-timeslot 1
- work-mode satof
  fgclient-number 2
  fg-oam
   bas send enable
  !
 !
+controller flexe-group 1
+ bind controller flexe-200gi 0/1/0/1 phy-num 1
+ group-number 1
+!
 controller mtn-fgclient 1
  bind mtn-client 1/301 fg-timeslot 0
- work-mode satof
  fgclient-number 1
  fg-oam
   bas send enable
@@ -693,11 +698,14 @@ controller mtn-fgclient 1
 !
 controller mtn-fgclient 4
  bind mtn-client 1/301 fg-timeslot 3
- work-mode satof
  fgclient-number 4
  fg-oam
   bas send enable
  !
+!
+controller flexe-group 1
+ bind controller flexe-200gi 0/1/0/1 phy-num 1
+ group-number 1
 !`;
         
         inputText.value = exampleText;
@@ -961,41 +969,41 @@ controller mtn-fgclient 4
     }
     
     // 将函数暴露到全局作用域
-    window.toggleTheme = toggleTheme;
+    // window.toggleTheme = toggleTheme;
     
     // 简单主题切换函数 - 供内联onclick调用
-    window.simpleToggleTheme = function() {
-        console.log('simpleToggleTheme函数被调用');
+    // window.simpleToggleTheme = function() {
+    //     console.log('simpleToggleTheme函数被调用');
         
-        // 直接获取当前主题
-        const current = document.documentElement.getAttribute('data-theme');
-        console.log('当前主题:', current);
+    //     // 直接获取当前主题
+    //     const current = document.documentElement.getAttribute('data-theme');
+    //     console.log('当前主题:', current);
         
-        // 切换主题
-        const newTheme = current === 'dark' ? 'light' : 'dark';
-        console.log('新主题:', newTheme);
+    //     // 切换主题
+    //     const newTheme = current === 'dark' ? 'light' : 'dark';
+    //     console.log('新主题:', newTheme);
         
-        // 直接设置属性
-        document.documentElement.setAttribute('data-theme', newTheme);
+    //     // 直接设置属性
+    //     document.documentElement.setAttribute('data-theme', newTheme);
         
-        // 更新按钮文本
-        const themeIcon = document.querySelector('#theme-toggle i');
-        const themeText = document.querySelector('#theme-toggle .theme-text');
+    //     // 更新按钮文本
+    //     const themeIcon = document.querySelector('#theme-toggle i');
+    //     const themeText = document.querySelector('#theme-toggle .theme-text');
         
-        if (themeIcon) {
-            themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        }
+    //     if (themeIcon) {
+    //         themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    //     }
         
-        if (themeText) {
-            themeText.textContent = newTheme === 'dark' ? '浅色主题' : '暗色主题';
-        }
+    //     if (themeText) {
+    //         themeText.textContent = newTheme === 'dark' ? '浅色主题' : '暗色主题';
+    //     }
         
-        // 保存到本地存储
-        localStorage.setItem('configDeduplicator_theme', newTheme);
+    //     // 保存到本地存储
+    //     localStorage.setItem('configDeduplicator_theme', newTheme);
         
-        // 显示通知（使用现有的通知系统）
-        showNotification(`已切换到${newTheme === 'dark' ? '暗色' : '浅色'}主题`);
-    };
+    //     // 显示通知（使用现有的通知系统）
+    //     showNotification(`已切换到${newTheme === 'dark' ? '暗色' : '浅色'}主题`);
+    // };
     
     // 首先初始化主题功能
     initTheme();

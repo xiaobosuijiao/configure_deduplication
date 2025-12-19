@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>网络配置去重工具</title>
+    <title>网络文本去重工具</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="all.min.css">
 </head>
@@ -12,14 +12,13 @@
         <header>
             <div class="header-content">
                 <div class="header-left">
-                    <h1><i class="fas fa-network-wired"></i> 网络配置去重工具</h1>
-                    <p class="subtitle">自动识别并删除重复的配置块，支持多种网络设备配置格式</p>
-                </div>
-                <div class="header-right">
-                    <button id="theme-toggle" class="theme-toggle-btn" title="切换主题" onclick="simpleToggleTheme()">
-                        <i class="fas fa-moon"></i>
-                        <span class="theme-text">暗色主题</span>
-                    </button>
+                    <h1><i class="fas fa-network-wired"></i> 多行文本去重工具
+                        <button id="theme-toggle" class="theme-toggle-btn" title="切换主题" onclick="simpleToggleTheme()">
+                            <i class="fas fa-moon"></i>
+                            <span class="theme-text">暗色主题</span>
+                        </button>
+                    </h1>
+                    <!-- <p class="subtitle">自动识别并删除重复的文本块，支持多种网络设备文本格式</p> -->
                 </div>
             </div>
         </header>
@@ -27,7 +26,7 @@
         <div class="main-content">
             <div class="panel">
                 <div class="panel-header">
-                    <div class="panel-title"><i class="fas fa-sign-in-alt"></i> 输入配置</div>
+                    <div class="panel-title"><i class="fas fa-sign-in-alt"></i> 输入文本</div>
                     <div class="counter">行数: <span id="input-line-count">0</span></div>
                     <div class="panel-header-actions">
                         <div class="file-upload-wrapper">
@@ -40,39 +39,7 @@
                 </div>
                 <div class="textarea-wrapper">
                     <div class="line-numbers" id="input-line-numbers"></div>
-                    <textarea id="input-text" class="input-area" placeholder="请粘贴您的配置文本...">
-controller mtn-fgclient 1
- bind mtn-client 1/301 fg-timeslot 0
- work-mode satof
- fgclient-number 1
- fg-oam
-  bas send enable
- !
-!
-controller mtn-fgclient 2
- bind mtn-client 1/301 fg-timeslot 1
- work-mode satof
- fgclient-number 2
- fg-oam
-  bas send enable
- !
-!
-controller mtn-fgclient 1
- bind mtn-client 1/301 fg-timeslot 0
- work-mode satof
- fgclient-number 1
- fg-oam
-  bas send enable
- !
-!
-controller mtn-fgclient 4
- bind mtn-client 1/301 fg-timeslot 3
- work-mode satof
- fgclient-number 4
- fg-oam
-  bas send enable
- !
-!</textarea>
+                    <textarea id="input-text" class="input-area" placeholder="请粘贴您的文本..."></textarea>
                 </div>
             </div>
             
@@ -88,21 +55,21 @@ controller mtn-fgclient 4
                 </div>
                 <div class="textarea-wrapper">
                     <div class="line-numbers" id="output-line-numbers"></div>
-                    <textarea id="output-text" class="output-area" readonly placeholder="去重后的配置将显示在这里..."></textarea>
+                    <textarea id="output-text" class="output-area" readonly placeholder="去重后的文本将显示在这里..."></textarea>
                 </div>
             </div>
             
             <div class="control-panel">
                 <div class="control-row">
                     <div class="control-group">
-                        <label for="keywords"><i class="fas fa-key"></i> 配置块起始关键字</label>
+                        <label for="keywords"><i class="fas fa-key"></i> 文本块起始关键字</label>
                         <input type="text" id="keywords" class="keywords-input" value="controller, router, interface">
-                        <p class="hint">多个关键字用英文逗号分隔，程序将识别以这些关键字开头的配置块</p>
+                        <p class="hint">多个关键字用英文逗号分隔，程序将识别以这些关键字开头的文本块</p>
                     </div>
                     <div class="control-group">
                         <label for="block-end"><i class="fas fa-flag-checkered"></i> 块结束标记 (可选)</label>
                         <input type="text" id="block-end" class="keywords-input" value="!">
-                        <p class="hint">配置块的结束标记，默认为"!"。如果为空，则自动检测到下一个关键字前结束</p>
+                        <p class="hint">文本块的结束标记，默认为"!"。如果为空，则自动检测到下一个关键字前结束</p>
                     </div>
                 </div>
                 
@@ -126,7 +93,7 @@ controller mtn-fgclient 4
                         <i class="fas fa-clock"></i> 处理耗时: <span id="process-time" class="stat-value">0</span> 毫秒
                     </div>
                     <div class="stat-item">
-                        <i class="fas fa-cubes"></i> 原配置块: <span id="original-blocks" class="stat-value">0</span> 个
+                        <i class="fas fa-cubes"></i> 原文本块: <span id="original-blocks" class="stat-value">0</span> 个
                     </div>
                     <div class="stat-item">
                         <i class="fas fa-check-circle success"></i> 保留块: <span id="kept-blocks" class="stat-value success">0</span> 个
