@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>帮助文档 - 网络文本去重工具</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="all.min.css">
+    <style>
+        .help-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
+        }
+
+        .help-header {
+            background: var(--header-bg);
+            color: var(--header-text);
+            padding: 25px 30px;
+            transition: background 0.3s ease, color 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .help-header h1 {
+            font-size: 28px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--header-text);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .help-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .section h2 {
+            font-size: 24px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section h2 i {
+            color: var(--success-color);
+        }
+
+        .section h3 {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin: 25px 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .section ul, .section ol {
+            margin-left: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section li {
+            margin-bottom: 10px;
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background-color: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .feature-card h4 {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card h4 i {
+            color: var(--success-color);
+        }
+
+        .feature-card p {
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .code-block {
+            background-color: var(--bg-quaternary);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .example-container {
+            background-color: var(--bg-tertiary);
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .example-container h4 {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .example-container h4 i {
+            color: var(--success-color);
+        }
+
+        .tip-box {
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid var(--success-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .tip-box h4 {
+            color: var(--success-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .warning-box {
+            background-color: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid var(--removed-color);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .warning-box h4 {
+            color: var(--removed-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .keyboard-shortcut {
+            display: inline-block;
+            background-color: var(--bg-quaternary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            margin: 0 2px;
+        }
+
+        @media (max-width: 768px) {
+            .help-content {
+                padding: 20px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .help-header h1 {
+                font-size: 24px;
+            }
+            
+            .back-btn {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="help-container">
+        <header class="help-header">
+            <h1><i class="fas fa-question-circle"></i> 帮助文档 - 网络文本去重工具</h1>
+            <a href="index.html" class="back-btn">
+                <i class="fas fa-arrow-left"></i> 返回主页面
+            </a>
+        </header>
+
+        <div class="help-content">
+            <div class="section">
+                <h2><i class="fas fa-info-circle"></i> 工具简介</h2>
+                <p>网络文本去重工具是一款专门用于处理网络设备配置文件的在线工具。它能够自动识别并删除重复的配置块，帮助网络工程师快速清理冗余配置，提高配置文件的可读性和维护性。</p>
+                
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4><i class="fas fa-bolt"></i> 快速处理</h4>
+                        <p>支持大文件处理，能够快速处理数十万行的配置文件，提供实时进度显示。</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><i class="fas fa-cogs"></i> 智能识别</h4>
+                        <p>基于关键字自动识别配置块，支持自定义起始关键字和结束标记。</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><i class="fas fa-chart-bar"></i> 详细统计</h4>
+                        <p>提供详细的处理统计信息，包括处理时间、原始块数、保留块数和删除块数。</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4><i class="fas fa-file-export"></i> 多种导出</h4>
+                        <p>支持导出处理结果和详细的重复块报告（JSON/CSV格式）。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2><i class="fas fa-play-circle"></i> 快速开始</h2>
+                <h3><i class="fas fa-sign-in-alt"></i> 第一步：输入文本</h3>
+                <p>您可以通过以下三种方式输入要处理的文本：</p>
+                <ol>
+                    <li><strong>直接粘贴</strong>：在左侧输入框中直接粘贴您的配置文本</li>
+                    <li><strong>导入文件</strong>：点击"导入文件"按钮，选择要处理的配置文件（支持.txt、.conf、.cfg、.config、.log格式）</li>
+                    <li><strong>加载示例</strong>：点击"加载示例"按钮，使用内置的示例配置进行测试</li>
+                </ol>
+
+                <h3><i class="fas fa-sliders-h"></i> 第二步：配置参数</h3>
+                <p>根据您的配置文件类型，调整以下参数：</p>
+                <ul>
+                    <li><strong>文本块起始关键字</strong>：配置块开始的关键字，如"controller"、"router"、"interface"等，多个关键字用英文逗号分隔</li>
+                    <li><strong>块结束标记</strong>：配置块结束的标记，默认为"!"。如果为空，则自动检测到下一个关键字前结束</li>
+                </ul>
+
+                <h3><i class="fas fa-bolt"></i> 第三步：开始处理</h3>
+                <p>点击"开始去重处理"按钮，工具将自动识别并删除重复的配置块。处理结果将显示在右侧输出框中。</p>
+
+                <h3><i class="fas fa-download"></i> 第四步：导出结果</h3>
+                <p>处理完成后，您可以选择：</p>
+                <ul>
+                    <li><strong>复制结果</strong>：将去重后的文本复制到剪贴板</li>
+                    <li><strong>导出结果</strong>：将结果保存为文本文件</li>
+                    <li><strong>导出详细结果</strong>：生成包含重复块详细信息的报告（JSON或CSV格式）</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2><i class="fas fa-cog"></i> 高级功能</h2>
+                
+                <div class="example-container">
+                    <h4><i class="fas fa-code"></i> 配置块识别原理</h4>
+                    <p>工具通过以下规则识别配置块：</p>
+                    <div class="code-block">
+1. 扫描文本，查找以起始关键字开头的行<br>
+2. 从该行开始，收集后续所有行，直到：<br>
+   - 遇到块结束标记（默认为"!"）<br>
+   - 遇到下一个起始关键字<br>
+   - 遇到纯数字行（如"1223"）<br>
+3. 将收集到的行作为一个完整的配置块<br>
+4. 比较所有配置块的内容，删除重复的块
+                    </div>
+                </div>
+
+                <div class="example-container">
+                    <h4><i class="fas fa-file-alt"></i> 示例配置</h4>
+                    <p>以下是一个典型的网络配置示例，包含重复的配置块：</p>
+                    <div class="code-block">
+controller flexe-group 1<br>
+ bind controller flexe-200gi 0/1/0/1 phy-num 1<br>
+ group-number 1<br>
+!<br>
+controller mtn-fgclient 1<br>
+ bind mtn-client 1/301 fg-timeslot 0<br>
+ fgclient-number 1<br>
+ fg-oam<br>
+  bas send enable<br>
+ !<br>
+!<br>
+controller flexe-group 1  <span style="color: var(--removed-color);">← 这个块是重复的，将被删除</span><br>
+ bind controller flexe-200gi 0/1/0/1 phy-num 1<br>
+ group-number 1<br>
+!
+                    </div>
+                </div>
+
+                <div class="tip-box">
+                    <h4><i class="fas fa-lightbulb"></i> 使用技巧</h4>
+                    <ul>
+                        <li>对于大型配置文件（超过10万行），工具会自动启用大文件处理模式，显示进度条</li>
+                        <li>您可以通过点击主题切换按钮在浅色和深色主题之间切换</li>
+                        <li>工具会记住您的主题偏好，下次访问时自动应用</li>
+                        <li>导出详细结果功能可以帮助您分析哪些配置块被重复使用了</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4><i class="fas fa-exclamation-triangle"></i> 注意事项</h4>
+                    <ul>
+                        <li>工具处理的是文本级别的去重，不会解析配置的语义</li>
+                        <li>请确保起始关键字设置正确，否则可能无法正确识别配置块</li>
+                        <li>对于非常复杂的嵌套配置，建议先进行测试</li>
+                        <li>处理前建议备份原始配置文件</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2><i class="fas fa-question"></i> 常见问题</h2>
+                
+                <h3><i class="fas fa-question-circle"></i> Q1: 工具支持哪些文件格式？</h3>
+                <p>支持.txt、.conf、.cfg、.config、.log等纯文本格式的文件。最大文件大小为100MB。</p>
+
+                <h3><i class="fas fa-question-circle"></i> Q2: 如何处理包含嵌套配置的文件？</h3>
+                <p>工具目前支持简单的嵌套配置识别。对于复杂的嵌套结构，建议适当调整块结束标记，或分多次处理。</p>
+
+                <h3><i class="fas fa-question-circle"></i> Q3: 为什么有些相似的配置块没有被识别为重复？</h3>
+                <p>工具进行的是精确匹配，只有内容完全相同的块才会被识别为重复。如果块中有微小差异（如空格、注释等），则不会被识别为重复。</p>
+
+                <h3><i class="fas fa-question-circle"></i> Q4: 如何处理没有明显结束标记的配置？</h3>
+                <p>可以将块结束标记留空，工具会自动检测到下一个起始关键字前结束。或者，可以设置一个在您的配置中不会出现的特殊字符作为结束标记。</p>
+
+                <h3><i class="fas fa-question-circle"></i> Q5: 工具是否保存我的数据？</h3>
+                <p>所有处理都在浏览器本地进行，数据不会上传到服务器。工具只会在本地存储您的主题偏好设置。</p>
+            </div>
+
+            <div class="section">
+                <h2><i class="fas fa-keyboard"></i> 键盘快捷键</h2>
+                <p>为了提高使用效率，工具支持以下键盘快捷键：</p>
+                <ul>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">Enter</span>：开始处理（当输入框获得焦点时）</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">C</span>：复制处理结果（当输出框有内容时）</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">L</span>：清空所有内容</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">E</span>：加载示例</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">D</span>：导出结果</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">H</span>：打开帮助文档</li>
+                    <li><span class="keyboard-shortcut">Ctrl</span> + <span class="keyboard-shortcut">T</span>：切换主题</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h2><i class="fas fa-heart"></i> 反馈与支持</h2>
+                <p>如果您在使用过程中遇到任何问题，或者有改进建议，欢迎通过以下方式联系我们：</p>
+                <ul>
+                    <li><strong>邮箱</strong>: bbsui@fiberhome.com</li>
+                    <li><strong>GitHub</strong>: <a href="https://github.com/xiaobosuijiao/configure_deduplication" target="_blank" style="color: var(--success-color); text-decoration: none;">https://github.com/xiaobosuijiao/configure_deduplication</a></li>
+                </ul>
+                <p>我们非常重视您的反馈，并将持续改进这个工具，使其更好地服务于网络工程师的日常工作。</p>
+                
+                <div class="tip-box">
+                    <h4><i class="fas fa-star"></i> 感谢使用</h4>
+                    <p>感谢您使用网络文本去重工具！我们希望这个工具能够帮助您更高效地处理网络配置文件，节省宝贵的时间。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
