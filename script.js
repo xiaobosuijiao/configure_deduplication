@@ -393,8 +393,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentChunk = 0;
         const totalChunks = Math.ceil(totalLines / chunkSize);
         
-        // 异步处理函数
-        function processChunk() {
+        // 使用requestAnimationFrame进行迭代处理，避免调用堆栈溢出
+        function processNextChunk() {
             const chunkStart = currentChunk * chunkSize;
             const chunkEnd = Math.min(chunkStart + chunkSize, totalLines);
             
@@ -477,10 +477,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             currentChunk++;
             
+            // 更新进度显示
+            if (progressFill && progressDetail && progressPercentage) {
+                const progress = Math.min(100, Math.round((currentChunk / totalChunks) * 100));
+                progressFill.style.width = `${progress}%`;
+                progressDetail.textContent = `已处理 ${Math.min(currentChunk * chunkSize, totalLines).toLocaleString()} 行 / 总共 ${totalLines.toLocaleString()} 行`;
+                progressPercentage.textContent = `${progress}%`;
+            }
+            
             // 检查是否还有更多块需要处理
             if (currentChunk < totalChunks) {
-                // 使用setTimeout避免阻塞UI
-                setTimeout(processChunk, 0);
+                // 使用requestAnimationFrame进行下一块处理，避免调用堆栈溢出
+                requestAnimationFrame(processNextChunk);
             } else {
                 // 处理最后一个块（如果存在）
                 if (currentBlock.length > 0) {
@@ -617,7 +625,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // 开始处理
-        processChunk();
+        processNextChunk();
     }
     
     // 复制结果按钮点击事件
