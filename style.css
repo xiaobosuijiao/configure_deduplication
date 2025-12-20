@@ -577,6 +577,56 @@ textarea::-webkit-scrollbar-thumb:hover {
     line-height: 1.4;
 }
 
+/* 将被删除的文本高亮样式 */
+.removed-line-highlight {
+    background-color: rgba(231, 76, 60, 0.15) !important;
+    position: relative;
+    text-decoration: line-through !important;
+    text-decoration-color: rgba(231, 76, 60, 0.8) !important;
+    text-decoration-thickness: 2px !important;
+}
+
+.removed-line-highlight::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        rgba(231, 76, 60, 0.1) 0%, 
+        rgba(231, 76, 60, 0.2) 50%, 
+        rgba(231, 76, 60, 0.1) 100%);
+    z-index: -1;
+}
+
+[data-theme="dark"] .removed-line-highlight {
+    background-color: rgba(252, 129, 129, 0.2) !important;
+    text-decoration-color: rgba(252, 129, 129, 0.9) !important;
+}
+
+[data-theme="dark"] .removed-line-highlight::after {
+    background: linear-gradient(90deg, 
+        rgba(252, 129, 129, 0.15) 0%, 
+        rgba(252, 129, 129, 0.25) 50%, 
+        rgba(252, 129, 129, 0.15) 100%);
+}
+
+/* 行号区域的高亮样式 */
+.line-numbers .removed-line-number {
+    color: var(--removed-color) !important;
+    font-weight: bold;
+    position: relative;
+}
+
+.line-numbers .removed-line-number::before {
+    content: '×';
+    position: absolute;
+    left: 5px;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
 /* 页脚样式 */
 .footer {
     background-color: var(--bg-tertiary);

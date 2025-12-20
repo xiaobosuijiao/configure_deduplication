@@ -65,6 +65,113 @@ document.addEventListener('DOMContentLoaded', function() {
         syncScroll(textarea, lineNumbersElement);
     }
     
+    // 高亮显示将被删除的行
+    function highlightRemovedLines(removedLineNumbers) {
+        if (!removedLineNumbers || removedLineNumbers.length === 0) {
+            return;
+        }
+        
+        // 获取输入文本框和行号元素
+        const inputText = document.getElementById('input-text');
+        const inputLineNumbers = document.getElementById('input-line-numbers');
+        
+        if (!inputText || !inputLineNumbers) {
+            return;
+        }
+        
+        // 获取所有行
+        const lines = inputText.value.split('\n');
+        
+        // 清除之前的高亮
+        clearHighlights();
+        
+        // 高亮将被删除的行
+        removedLineNumbers.forEach(lineNumber => {
+            if (lineNumber >= 1 && lineNumber <= lines.length) {
+                // 高亮行号
+                const lineNumberSpans = inputLineNumbers.querySelectorAll('span');
+                if (lineNumberSpans[lineNumber - 1]) {
+                    lineNumberSpans[lineNumber - 1].classList.add('removed-line-number');
+                }
+            }
+        });
+        
+        // 对于小文本，我们还可以在文本框中高亮显示
+        if (lines.length <= 1000) {
+            // 创建一个临时div来显示高亮文本
+            const textareaWrapper = inputText.parentElement;
+            const highlightDiv = document.createElement('div');
+            highlightDiv.id = 'text-highlight-overlay';
+            highlightDiv.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                pointer-events: none;
+                background: transparent;
+                z-index: 1;
+                font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+                font-size: 13px;
+                line-height: 1.6;
+                white-space: pre;
+                overflow: hidden;
+                padding: 20px;
+                margin-left: 70px; /* 行号区域宽度 */
+                color: transparent;
+            `;
+            
+            // 构建高亮文本
+            let highlightedText = '';
+            for (let i = 0; i < lines.length; i++) {
+                const lineNumber = i + 1;
+                if (removedLineNumbers.includes(lineNumber)) {
+                    // 将被删除的行：添加高亮背景
+                    highlightedText += `<span class="removed-line-highlight">${lines[i] || ' '}</span>\n`;
+                } else {
+                    // 保留的行：透明文本
+                    highlightedText += `<span style="color: transparent;">${lines[i] || ' '}</span>\n`;
+                }
+            }
+            
+            highlightDiv.innerHTML = highlightedText;
+            
+            // 移除旧的覆盖层（如果存在）
+            const oldOverlay = document.getElementById('text-highlight-overlay');
+            if (oldOverlay) {
+                oldOverlay.remove();
+            }
+            
+            // 添加新的覆盖层
+            textareaWrapper.style.position = 'relative';
+            textareaWrapper.appendChild(highlightDiv);
+            
+            // 同步滚动
+            inputText.addEventListener('scroll', function() {
+                highlightDiv.scrollTop = inputText.scrollTop;
+                highlightDiv.scrollLeft = inputText.scrollLeft;
+            });
+        }
+    }
+    
+    // 清除高亮
+    function clearHighlights() {
+        // 清除行号高亮
+        const inputLineNumbers = document.getElementById('input-line-numbers');
+        if (inputLineNumbers) {
+            const lineNumberSpans = inputLineNumbers.querySelectorAll('span');
+            lineNumberSpans.forEach(span => {
+                span.classList.remove('removed-line-number');
+            });
+        }
+        
+        // 清除文本高亮覆盖层
+        const oldOverlay = document.getElementById('text-highlight-overlay');
+        if (oldOverlay) {
+            oldOverlay.remove();
+        }
+    }
+    
     // 同步文本框和行号区域的滚动
     function syncScroll(textarea, lineNumbersElement) {
         // 移除之前的滚动事件监听器（避免重复）
@@ -259,11 +366,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 第二遍：构建结果，保持原始顺序
+        // 第二遍：构建结果，保持原始顺序，并记录将被删除的行
         const resultLines = [];
         const seenKeys = new Set();
+        const removedLineNumbers = new Set(); // 记录将被删除的行号（1-based）
         
         currentBlock = [];
+        let secondPassBlockStartLine = -1; // 记录当前块的起始行号（0-based），避免与第一遍的变量名冲突
         inBlock = false;
         
         for (let i = 0; i < lines.length; i++) {
@@ -282,6 +391,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!seenKeys.has(key)) {
                         seenKeys.add(key);
                         resultLines.push(...currentBlock);
+                    } else {
+                        // 这个块是重复的，将被删除，记录所有行号
+                        // 当前块的起始行号是 secondPassBlockStartLine
+                        for (let j = 0; j < currentBlock.length; j++) {
+                            removedLineNumbers.add(secondPassBlockStartLine + j + 1); // 转换为1-based行号
+                        }
                     }
                     
                     // 重置当前块
@@ -290,6 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 开始新块
                 inBlock = true;
+                secondPassBlockStartLine = i; // 记录块的起始行号
                 currentBlock.push(line);
             } else if (inBlock) {
                 // 继续收集当前块
@@ -313,6 +429,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (!seenKeys.has(key)) {
                         seenKeys.add(key);
                         resultLines.push(...currentBlock);
+                    } else {
+                        // 这个块是重复的，将被删除，记录所有行号
+                        // 当前块的起始行号是 secondPassBlockStartLine
+                        for (let j = 0; j < currentBlock.length; j++) {
+                            removedLineNumbers.add(secondPassBlockStartLine + j + 1); // 转换为1-based行号
+                        }
                     }
                     
                     currentBlock = [];
@@ -330,6 +452,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!seenKeys.has(key)) {
                 seenKeys.add(key);
                 resultLines.push(...currentBlock);
+            } else {
+                // 这个块是重复的，将被删除，记录所有行号
+                // 当前块的起始行号是 secondPassBlockStartLine
+                for (let j = 0; j < currentBlock.length; j++) {
+                    removedLineNumbers.add(secondPassBlockStartLine + j + 1); // 转换为1-based行号
+                }
             }
         }
         
@@ -360,7 +488,8 @@ document.addEventListener('DOMContentLoaded', function() {
             totalBlocks,
             keptBlocks: seenKeys.size,
             removedBlocks: totalBlocks - seenKeys.size,
-            duplicateBlocks
+            duplicateBlocks,
+            removedLineNumbers: Array.from(removedLineNumbers).sort((a, b) => a - b)
         };
     }
     
@@ -398,6 +527,13 @@ document.addEventListener('DOMContentLoaded', function() {
             lastProcessedResult = processed;
             
             updateLineCounts();
+            
+            // 高亮显示将被删除的行
+            if (processed.removedLineNumbers && processed.removedLineNumbers.length > 0) {
+                highlightRemovedLines(processed.removedLineNumbers);
+            } else {
+                clearHighlights();
+            }
             
             const message = `处理完成！删除了 ${processed.removedBlocks} 个重复块，保留了 ${processed.keptBlocks} 个唯一块。`;
             showNotification(message);
@@ -765,6 +901,9 @@ document.addEventListener('DOMContentLoaded', function() {
         originalBlocks.textContent = '0';
         keptBlocks.textContent = '0';
         removedBlocks.textContent = '0';
+        
+        // 清除高亮
+        clearHighlights();
         
         showNotification('已清空所有内容！');
     });
