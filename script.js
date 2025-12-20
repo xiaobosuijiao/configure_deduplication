@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 继续收集当前块
                 currentBlock.push(line);
                 
-                // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                // 检查是否是块的结束：遇到块结束标记时，结束当前块
                 if (trimmedLine === blockEndMarker) {
                     // 查找后续所有连续的块结束标记行
                     let nextIdx = i + 1;
@@ -200,72 +200,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         nextIdx++;
                     }
                     
-                    // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
-                    if (nextIdx < lines.length) {
-                        const nextLine = lines[nextIdx].trim();
-                        const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
-                        
-                        // 如果下一行是新块的开始或者是数字，则结束当前块
-                        if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                            const blockKey = currentBlock.join('\n').trim();
-                            const blockContent = [...currentBlock];
-                            
-                            // 记录块出现信息
-                            blockOccurrences.push({
-                                key: blockKey,
-                                content: blockContent,
-                                startLine: currentBlockStartLine + 1,
-                                endLine: i + 1 // 包括最后一行
-                            });
-                            
-                            // 更新块信息统计
-                            if (!blockInfoMap.has(blockKey)) {
-                                blockInfoMap.set(blockKey, {
-                                    content: blockContent,
-                                    count: 1,
-                                    lineNumbers: [currentBlockStartLine + 1]
-                                });
-                            } else {
-                                const info = blockInfoMap.get(blockKey);
-                                info.count++;
-                                info.lineNumbers.push(currentBlockStartLine + 1);
-                            }
-                            
-                            currentBlock = [];
-                            inBlock = false;
-                        }
-                        // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
-                    } else {
-                        // 最后一行是块结束标记，结束当前块
-                        const blockKey = currentBlock.join('\n').trim();
-                        const blockContent = [...currentBlock];
-                        
-                        // 记录块出现信息
-                        blockOccurrences.push({
-                            key: blockKey,
+                    // 结束当前块（不再检查下一行）
+                    const blockKey = currentBlock.join('\n').trim();
+                    const blockContent = [...currentBlock];
+                    
+                    // 记录块出现信息
+                    blockOccurrences.push({
+                        key: blockKey,
+                        content: blockContent,
+                        startLine: currentBlockStartLine + 1,
+                        endLine: i + 1 // 包括最后一行
+                    });
+                    
+                    // 更新块信息统计
+                    if (!blockInfoMap.has(blockKey)) {
+                        blockInfoMap.set(blockKey, {
                             content: blockContent,
-                            startLine: currentBlockStartLine + 1,
-                            endLine: i + 1 // 包括最后一行
+                            count: 1,
+                            lineNumbers: [currentBlockStartLine + 1]
                         });
-                        
-                        // 更新块信息统计
-                        if (!blockInfoMap.has(blockKey)) {
-                            blockInfoMap.set(blockKey, {
-                                content: blockContent,
-                                count: 1,
-                                lineNumbers: [currentBlockStartLine + 1]
-                            });
-                        } else {
-                            const info = blockInfoMap.get(blockKey);
-                            info.count++;
-                            info.lineNumbers.push(currentBlockStartLine + 1);
-                        }
-                        
-                        currentBlock = [];
-                        inBlock = false;
+                    } else {
+                        const info = blockInfoMap.get(blockKey);
+                        info.count++;
+                        info.lineNumbers.push(currentBlockStartLine + 1);
                     }
+                    
+                    currentBlock = [];
+                    inBlock = false;
                 }
             }
+            // 注意：这里不处理非块行，因为第一遍扫描只关注块识别和统计
         }
         
         // 处理最后一个块（如果存在）
@@ -331,7 +295,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 继续收集当前块
                 currentBlock.push(line);
                 
-                // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                // 检查是否是块的结束：遇到块结束标记时，结束当前块
                 if (trimmedLine === blockEndMarker) {
                     // 查找后续所有连续的块结束标记行
                     let nextIdx = i + 1;
@@ -342,37 +306,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         nextIdx++;
                     }
                     
-                    // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
-                    if (nextIdx < lines.length) {
-                        const nextLine = lines[nextIdx].trim();
-                        const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
-                        
-                        // 如果下一行是新块的开始或者是数字，则结束当前块
-                        if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                            const key = currentBlock.join('\n').trim();
-                            
-                            // 如果是第一个出现的块，添加到结果中
-                            if (!seenKeys.has(key)) {
-                                seenKeys.add(key);
-                                resultLines.push(...currentBlock);
-                            }
-                            
-                            currentBlock = [];
-                            inBlock = false;
-                        }
-                        // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
-                    } else {
-                        // 最后一行是块结束标记，结束当前块
-                        const key = currentBlock.join('\n').trim();
-                        
-                        if (!seenKeys.has(key)) {
-                            seenKeys.add(key);
-                            resultLines.push(...currentBlock);
-                        }
-                        
-                        currentBlock = [];
-                        inBlock = false;
+                    // 结束当前块（不再检查下一行）
+                    const key = currentBlock.join('\n').trim();
+                    
+                    // 如果是第一个出现的块，添加到结果中
+                    if (!seenKeys.has(key)) {
+                        seenKeys.add(key);
+                        resultLines.push(...currentBlock);
                     }
+                    
+                    currentBlock = [];
+                    inBlock = false;
                 }
             } else {
                 // 不在块中的行（如"1223"这样的行）直接添加到结果中
@@ -559,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 继续收集当前块
                     currentBlock.push(line);
                     
-                    // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                    // 检查是否是块的结束：遇到块结束标记时，结束当前块
                     if (trimmedLine === blockEndMarker) {
                         // 查找后续所有连续的块结束标记行
                         let nextIdx = i + 1;
@@ -570,80 +514,38 @@ document.addEventListener('DOMContentLoaded', function() {
                             nextIdx++;
                         }
                         
-                        // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
-                        if (nextIdx < lines.length) {
-                            const nextLine = lines[nextIdx].trim();
-                            const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
-                            
-                            // 如果下一行是新块的开始或者是数字，则结束当前块
-                            if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                                const blockKey = currentBlock.join('\n').trim();
-                                const blockContent = [...currentBlock];
-                                
-                                // 记录块出现信息
-                                blockOccurrences.push({
-                                    key: blockKey,
-                                    content: blockContent,
-                                    startLine: currentBlockStartLine + 1,
-                                    endLine: i + 1
-                                });
-                                
-                                // 更新块信息统计
-                                if (!blockInfoMap.has(blockKey)) {
-                                    blockInfoMap.set(blockKey, {
-                                        content: blockContent,
-                                        count: 1,
-                                        lineNumbers: [currentBlockStartLine + 1]
-                                    });
-                                } else {
-                                    const info = blockInfoMap.get(blockKey);
-                                    info.count++;
-                                    info.lineNumbers.push(currentBlockStartLine + 1);
-                                }
-                                
-                                // 如果这个块还没有出现过，保存到去重Map
-                                if (!blockMap.has(blockKey)) {
-                                    blockMap.set(blockKey, blockContent);
-                                }
-                                
-                                currentBlock = [];
-                                inBlock = false;
-                            }
-                            // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
-                        } else {
-                            // 最后一行是块结束标记，结束当前块
-                            const blockKey = currentBlock.join('\n').trim();
-                            const blockContent = [...currentBlock];
-                            
-                            // 记录块出现信息
-                            blockOccurrences.push({
-                                key: blockKey,
+                        // 结束当前块（不再检查下一行）
+                        const blockKey = currentBlock.join('\n').trim();
+                        const blockContent = [...currentBlock];
+                        
+                        // 记录块出现信息
+                        blockOccurrences.push({
+                            key: blockKey,
+                            content: blockContent,
+                            startLine: currentBlockStartLine + 1,
+                            endLine: i + 1
+                        });
+                        
+                        // 更新块信息统计
+                        if (!blockInfoMap.has(blockKey)) {
+                            blockInfoMap.set(blockKey, {
                                 content: blockContent,
-                                startLine: currentBlockStartLine + 1,
-                                endLine: i + 1
+                                count: 1,
+                                lineNumbers: [currentBlockStartLine + 1]
                             });
-                            
-                            // 更新块信息统计
-                            if (!blockInfoMap.has(blockKey)) {
-                                blockInfoMap.set(blockKey, {
-                                    content: blockContent,
-                                    count: 1,
-                                    lineNumbers: [currentBlockStartLine + 1]
-                                });
-                            } else {
-                                const info = blockInfoMap.get(blockKey);
-                                info.count++;
-                                info.lineNumbers.push(currentBlockStartLine + 1);
-                            }
-                            
-                            // 如果这个块还没有出现过，保存到去重Map
-                            if (!blockMap.has(blockKey)) {
-                                blockMap.set(blockKey, blockContent);
-                            }
-                            
-                            currentBlock = [];
-                            inBlock = false;
+                        } else {
+                            const info = blockInfoMap.get(blockKey);
+                            info.count++;
+                            info.lineNumbers.push(currentBlockStartLine + 1);
                         }
+                        
+                        // 如果这个块还没有出现过，保存到去重Map
+                        if (!blockMap.has(blockKey)) {
+                            blockMap.set(blockKey, blockContent);
+                        }
+                        
+                        currentBlock = [];
+                        inBlock = false;
                     }
                 }
             }
@@ -744,7 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // 继续收集当前块
                     tempBlock.push(line);
                     
-                    // 检查是否是块的结束：遇到块结束标记时，贪婪匹配所有连续的块结束标记
+                    // 检查是否是块的结束：遇到块结束标记时，结束当前块
                     if (trimmedLine === blockEndMarker) {
                         // 查找后续所有连续的块结束标记行
                         let nextIdx = i + 1;
@@ -755,39 +657,18 @@ document.addEventListener('DOMContentLoaded', function() {
                             nextIdx++;
                         }
                         
-                        // 吸收完所有连续的块结束标记后，检查下一行是否应该结束当前块
-                        if (nextIdx < lines.length) {
-                            const nextLine = lines[nextIdx].trim();
-                            const isNextBlockStart = keywordList.some(keyword => nextLine.startsWith(keyword));
-                            
-                            // 如果下一行是新块的开始或者是数字，则结束当前块
-                            if (isNextBlockStart || /^\d+$/.test(nextLine)) {
-                                const key = tempBlock.join('\n').trim();
-                                
-                                // 如果是第一个出现的块，添加到结果中
-                                if (!seenKeys.has(key)) {
-                                    seenKeys.add(key);
-                                    resultLines.push(...tempBlock);
-                                }
-                                
-                                tempBlock = [];
-                                tempBlockKey = '';
-                                tempInBlock = false;
-                            }
-                            // 注意：这里不检查下一行是否为块结束标记，因为我们已经吸收了所有连续的块结束标记
-                        } else {
-                            // 最后一行是块结束标记，结束当前块
-                            const key = tempBlock.join('\n').trim();
-                            
-                            if (!seenKeys.has(key)) {
-                                seenKeys.add(key);
-                                resultLines.push(...tempBlock);
-                            }
-                            
-                            tempBlock = [];
-                            tempBlockKey = '';
-                            tempInBlock = false;
+                        // 结束当前块（不再检查下一行）
+                        const key = tempBlock.join('\n').trim();
+                        
+                        // 如果是第一个出现的块，添加到结果中
+                        if (!seenKeys.has(key)) {
+                            seenKeys.add(key);
+                            resultLines.push(...tempBlock);
                         }
+                        
+                        tempBlock = [];
+                        tempBlockKey = '';
+                        tempInBlock = false;
                     }
                 }
             }
